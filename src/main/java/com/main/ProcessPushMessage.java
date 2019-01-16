@@ -25,6 +25,7 @@ public class ProcessPushMessage
 	private Properties props;
 
 	/**
+	 * コンストラクタ
 	 * @param _lineMessagingClient
 	 */
 	ProcessPushMessage(LineMessagingClient _lineMessagingClient)
