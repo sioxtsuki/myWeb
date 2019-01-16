@@ -8,12 +8,14 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.linecorp.bot.client.LineMessagingClient;
 import com.utility.Constants;
 
 @Component
@@ -21,6 +23,9 @@ public class ScheduledTaskService
 {
 	private int i = 0;
 	private static final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+
+	@Autowired
+	private LineMessagingClient lineMessagingClient;
 
 	//@Autowired
 	//private ProcessPushMessage message;
@@ -39,7 +44,7 @@ public class ScheduledTaskService
         {
         	resource = new ClassPathResource(Constants.PROP_PATH);
         	props = PropertiesLoaderUtils.loadProperties(resource);
-        	message = new ProcessPushMessage();
+        	message = new ProcessPushMessage(lineMessagingClient);
         	message.SetProps(props);
             //プッシュする処理を呼び出す
 			message.pushBurnablesAlarm();

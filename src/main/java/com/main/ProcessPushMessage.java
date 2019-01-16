@@ -8,8 +8,6 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.factory.DBFactory;
 import com.linecorp.bot.client.LineMessagingClient;
 import com.linecorp.bot.model.PushMessage;
@@ -23,10 +21,16 @@ import com.utility.Utility;
 public class ProcessPushMessage
 {
 
-	@Autowired
-	private LineMessagingClient lineMessagingClient;
-
+	private final LineMessagingClient lineMessagingClient;
 	private Properties props;
+
+	/**
+	 * @param _lineMessagingClient
+	 */
+	ProcessPushMessage(LineMessagingClient _lineMessagingClient)
+	{
+		this.lineMessagingClient = _lineMessagingClient;
+	}
 
 	/**
 	 * @param _props
@@ -88,8 +92,8 @@ public class ProcessPushMessage
 
 							//System.out.println(user_id.trim().toString());
 				        	@SuppressWarnings("unused")
-							final BotApiResponse response = lineMessagingClient
-				                                            .pushMessage(new PushMessage(user_id.trim().toString(),
+							final BotApiResponse response = this.lineMessagingClient
+				                                            .pushMessage(new PushMessage(user_id.toString(),
 				                                                         new TextMessage(text.toString()
 				 //                                                        new ConfirmTemplate("ごみ捨ては終わった？",
 				 //                                                        new MessageAction("はい", "はい"),
