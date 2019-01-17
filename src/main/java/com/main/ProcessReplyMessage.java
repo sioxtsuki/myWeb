@@ -57,7 +57,7 @@ public class ProcessReplyMessage
 	 * @param user_id
 	 * @return
 	 */
-	private String GetDisplyName(String channelToken, String user_id)
+	private String GetDisplayName(String channelToken, String user_id)
 	{
 		String displayName = "";
 
@@ -474,7 +474,7 @@ public class ProcessReplyMessage
 				if (ps != null)
 				{
 					// ディスプレイ名を取得
-					String displyName = GetDisplyName(
+					String displyName = GetDisplayName(
 							props.getProperty("line.bot.channelToken"), user_id.toString());
 
 					ps.clearParameters();
