@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -14,7 +15,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import com.factory.DBFactory;
+import com.linecorp.bot.client.LineMessagingClient;
+import com.linecorp.bot.client.LineMessagingClientImpl;
 import com.linecorp.bot.client.LineMessagingService;
+import com.linecorp.bot.client.LineMessagingServiceBuilder;
 import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.event.Event;
 import com.linecorp.bot.model.event.FollowEvent;
@@ -27,6 +31,7 @@ import com.linecorp.bot.model.event.message.TextMessageContent;
 import com.linecorp.bot.model.event.message.VideoMessageContent;
 import com.linecorp.bot.model.message.Message;
 import com.linecorp.bot.model.message.TextMessage;
+import com.linecorp.bot.model.profile.UserProfileResponse;
 import com.linecorp.bot.model.response.BotApiResponse;
 import com.linecorp.bot.spring.boot.annotation.EventMapping;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
@@ -43,6 +48,42 @@ public class ProcessReplyMessage
 	// プライベート文字列
 	private String[] strPrivates = {"kerberos", "よし","ケルベロス","おいで",",お手", "お座り","塩月", "ごはん","長谷川"};
 	private String[] strPermissions = { "塩月", "ごはん"};
+
+
+	/**
+	 * ディスプレイ名を返却
+	 *
+	 * @param channelToken
+	 * @param user_id
+	 * @return
+	 */
+	private String GetDisplyName(String channelToken, String user_id)
+	{
+		String displayName = "";
+
+		final LineMessagingClient lineMessagingClient = new LineMessagingClientImpl(
+				LineMessagingServiceBuilder
+						.create(channelToken.toString())
+						.build()
+				);
+
+		UserProfileResponse profile;
+
+		try {
+			profile = lineMessagingClient.getProfile(user_id.toString()).get();
+			displayName = profile.getDisplayName();
+
+		} catch (InterruptedException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (ExecutionException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		}
+
+		return displayName;
+	}
+
 
 	/**
 	 * テキストタイプのメッセージ応答処理
@@ -383,9 +424,10 @@ public class ProcessReplyMessage
 
     	try
     	{
-    		// データベースへ追加
         	resource = new ClassPathResource(Constants.PROP_PATH);
 			props = PropertiesLoaderUtils.loadProperties(resource);
+
+    		// データベースへ追加
 			conn = DBFactory.getConnection(props);
 			int ret = 0; // 処理結果
 
@@ -404,7 +446,7 @@ public class ProcessReplyMessage
 	    	StringBuilder sbAddSQL = new StringBuilder();
 	    	sbAddSQL.append("INSERT INTO ");
 	    	sbAddSQL.append(tb_user.toString());
-	    	sbAddSQL.append(" VALUES (?,?,?,?)");
+	    	sbAddSQL.append(" VALUES (?,?,?,?,?)");
 	    	//sbAddSQL.append("'" + user_id.toString() + "',");
 	    	//sbAddSQL.append("'" + bot_id.toString() + "',");
 	    	//sbAddSQL.append("1,");
@@ -420,6 +462,7 @@ public class ProcessReplyMessage
 					ps.clearParameters();
 					ps.setString(1, user_id.toString());
 					ps.setString(2, bot_id.toString());
+
 					ret = ps.executeUpdate();
 					if (ret == 1)
 						System.out.println("user delete successful. [" + user_id.toString() + "]");
@@ -430,11 +473,16 @@ public class ProcessReplyMessage
 				ps = conn.getPreparedStatement(sbAddSQL.toString(), null);
 				if (ps != null)
 				{
+					// ディスプレイ名を取得
+					String displyName = GetDisplyName(
+							props.getProperty("line.bot.channelToken"), user_id.toString());
+
 					ps.clearParameters();
 					ps.setString(1, user_id.toString());
-					ps.setString(2, bot_id.toString());
-					ps.setInt(3, 1);
-					ps.setString(4, sdf.format(new Date()).toString());
+					ps.setString(2, displyName.toString());
+					ps.setString(3, bot_id.toString());
+					ps.setInt(4, 1);
+					ps.setString(5, sdf.format(new Date()).toString());
 					ret = ps.executeUpdate();
 					if (ret != 0) // 処理成功の場合
 					{
