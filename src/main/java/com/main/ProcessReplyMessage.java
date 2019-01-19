@@ -95,15 +95,19 @@ public class ProcessReplyMessage
 	public void handleTextMessageEvent(MessageEvent<TextMessageContent> event)
 	{
 		DBConnection conn = null;
-		Resource resource = null;
-		Properties props = null;
 
 		System.out.println("SenderId: " + event.getSource().getSenderId());
 		System.out.println("UserId: " + event.getSource().getUserId());
 		System.out.println("Id: " + event.getMessage().getId());
-
+		StringBuilder sb = new StringBuilder();
 		// 入力文字を取得
 		String text = event.getMessage().getText();
+
+		// ユーザIDを取得
+		String user_id = event.getSource().getUserId();
+
+		// プロセス結果
+		String ret_process = "process successful.";
 
 		// プライベート判定フラグ
 		boolean IsPrivate = false;
@@ -146,60 +150,131 @@ public class ProcessReplyMessage
 				//*********************************
 				// 業務文字列の場合
 				//*********************************
-				if (text.equals("symbols") == true)
+				if (Utility.CompareString(text, "symbols") == true)
 				{
 					// @登録シンボル名情報を取得
-		        	resource = new ClassPathResource(Constants.PROP_PATH);
-		        	props = PropertiesLoaderUtils.loadProperties(resource);
-		        	conn = DBFactory.getConnection(props);
-		        	text = Utility.GetSymbols(conn);
+					conn = Utility.GetConn();
+					text = Utility.GetSymbols(conn);
 				}
-				else if (text.startsWith("symbol=") == true)
+				else if (Utility.StartsWithString(text, "symbol=") == true)
 				{
 					// @指定シンボルの現在のTick情報を取得
-					String[] symbol = text.split("=");
+					String[] symbols = text.split("=");
 
-					if (symbol.length < 2)
+					if (symbols.length < 2)
 					{
 						text = "invalid symbol.";
 					}
 					else
 					{
-			        	resource = new ClassPathResource(Constants.PROP_PATH);
-			        	props = PropertiesLoaderUtils.loadProperties(resource);
-			        	conn = DBFactory.getConnection(props);
-			        	text = Utility.GetRate(conn, symbol[1].trim().toString());
+						conn = Utility.GetConn();
+			        	text = Utility.GetRate(conn, symbols[1].trim().toString());
 					}
 				}
-				else if (text.equals("status") == true)
+				else if (Utility.CompareString(text,"status") == true)
 				{
 					// @現在の接続状況
-		        	resource = new ClassPathResource(Constants.PROP_PATH);
-		        	props = PropertiesLoaderUtils.loadProperties(resource);
-		        	conn = DBFactory.getConnection(props);
-
+					conn = Utility.GetConn();
 					text = Utility.IsRate_Proess(conn);
-					if (text.equals("") == true)
+
+					if (text.isEmpty() == true) // 返却結果が空の場合
 						text = "fine.";
+				}
+				else if (Utility.CompareString(text, "operations") == true)
+				{
+					// @アプリケーション操作:サーバー選択
+					conn = Utility.GetConn();
+					sb.append("Which server would you like to select ?\n");
+					sb.append("\n");
+					sb.append(Utility.GetServer(conn));
+					sb.append("\n");
+					sb.append("※ An example）server=ID\n");
+
+					text = sb.toString();
+				}
+				else if (Utility.StartsWithString(text, "server=") == true)
+				{
+					// @指定サーバーのアプリを制御
+					String[] servers = text.split("=");
+
+					if (servers.length < 2)
+					{
+						text = "invalid server.";
+					}
+					else
+					{
+						String server_id = servers[1].trim().toString();
+						conn = Utility.GetConn();
+			        	text = Utility.GetProcessesByServerId(conn, user_id.toString(), server_id.toString());
+
+			        	//
+						sb.append("< Operations Recive Commands >\n");
+						sb.append("１）run・・・Run specified application.\n");
+						sb.append("２）close・・・Activate the specified application.\n");
+						//sb.append("３）reboot・・・Restart specified application.\n");
+						sb.append("\n");
+						sb.append("■Apps\n");
+						sb.append(text);
+						sb.append("\n");
+						sb.append("※ An example）command=Apps,・・・\n");
+						text = sb.toString();
+					}
+				}
+				else if (Utility.StartsWithString(text, "run=") == true)
+				{
+					// @アプリケーション操作:アプリ実行
+					conn = Utility.GetConn();
+					if (Utility.ProcessExecute(conn, 0, user_id.toString(), text) == false)
+					{
+						ret_process = "process failed.";
+					}
+					text = ret_process;
+				}
+				else if (Utility.StartsWithString(text, "close=") == true)
+				{
+					// @アプリケーション操作:アプリ終了
+					conn = Utility.GetConn();
+					if (Utility.ProcessExecute(conn, 1, user_id.toString(), text) == false)
+					{
+						ret_process = "process failed.";
+					}
+					text = ret_process;
+				}
+				else if (Utility.StartsWithString(text, "reboot=") == true)
+				{
+					// @アプリケーション操作:アプリ再起動
+					conn = Utility.GetConn();
+					if (Utility.ProcessExecute(conn, 1, user_id.toString(), text) == false)
+					{
+						ret_process = "process failed.";
+					}
+					else
+					{
+						Thread.sleep(60000); // 60秒待機
+						if (Utility.ProcessExecute(conn, 0, user_id.toString(), text) == false)
+						{
+							ret_process = "process failed.";
+						}
+					}
+					text = ret_process;
 				}
 				else
 				{
 					// @メニュー
-					StringBuilder sb = new StringBuilder();
 					sb.append("< Recive Commands >\n");
-					sb.append("・symbols\n");
+					sb.append("symbols\n");
 					sb.append("    ---> Return the registered symbol list.\n");
 					sb.append("\n");
-					sb.append("・symbol=Symbol name\n");
+					sb.append("symbol=Symbol name\n");
 					sb.append("    ---> Return tick information of designated symbol.\n");
 					sb.append("\n");
-					sb.append("・status\n");
+					sb.append("status\n");
 					sb.append("    ---> Return check contents of communication status.\n");
+					sb.append("\n");
+					sb.append("operations\n");
+					sb.append("    ---> Perform application operations.\n");
 
 					text = sb.toString();
-
-					sb.delete(0, sb.length());
-					sb = null;
 					// 上記以外の場合、オウム返し
 //					text = event.getMessage().getText();
 				}
@@ -232,16 +307,8 @@ public class ProcessReplyMessage
 					System.out.println(e.getCause());
 				}
 			}
-
-			if (resource != null)
-			{
-				resource = null;
-			}
-
-			if (props != null)
-			{
-				props = null;
-			}
+			sb.delete(0, sb.length());
+			sb = null;
 		}
 	}
 
