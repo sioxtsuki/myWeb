@@ -120,9 +120,10 @@ public class Utility
 				{
 					if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
 					{
+						// 処理結果が返却されるまでループ
 						while (true)
 						{
-							Thread.sleep(1000);
+							Thread.sleep(1);
 							strStatus = GetStatusByProcess(conn, process, server_id);
 							if (Integer.parseInt(strStatus) != process_value)
 							{
@@ -135,8 +136,8 @@ public class Utility
 			}
 			else
 			{
-				count = appls.length;
 				// 指定のアプリが対象の場合
+				count = appls.length;
 				for (String appl : appls)
 				{
 					for (String process : processes)
@@ -145,6 +146,7 @@ public class Utility
 						{
 							if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
 							{
+								// 処理結果が返却されるまでループ
 								while (true)
 								{
 									Thread.sleep(1);
