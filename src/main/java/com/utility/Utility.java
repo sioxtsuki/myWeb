@@ -142,7 +142,7 @@ public class Utility
 				{
 					for (String process : processes)
 					{
-						if (process.compareTo(appl) == 0)
+						if (process.compareTo(appl) == 0) // 名称が一致した場合
 						{
 							if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
 							{

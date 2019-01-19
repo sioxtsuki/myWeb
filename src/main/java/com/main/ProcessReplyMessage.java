@@ -60,23 +60,30 @@ public class ProcessReplyMessage
 	private String GetDisplayName(String channelToken, String user_id)
 	{
 		String displayName = "";
-
-		final LineMessagingClient lineMessagingClient = new LineMessagingClientImpl(
-				LineMessagingServiceBuilder
-						.create(channelToken.toString())
-						.build()
-				);
-
 		UserProfileResponse profile;
 
-		try {
+		try
+		{
+			final LineMessagingClient lineMessagingClient = new LineMessagingClientImpl(
+					LineMessagingServiceBuilder
+							.create(channelToken.toString())
+							.build()
+					);
+
+			// プロフィールを取得
 			profile = lineMessagingClient.getProfile(user_id.toString()).get();
+
+			// ディスプレイ名を取得
 			displayName = profile.getDisplayName();
 
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e)
+		{
 			// TODO 自動生成された catch ブロック
 			System.out.println(e.getCause());
-		} catch (ExecutionException e) {
+		}
+		catch (ExecutionException e)
+		{
 			// TODO 自動生成された catch ブロック
 			System.out.println(e.getCause());
 		}
@@ -95,16 +102,15 @@ public class ProcessReplyMessage
 	public void handleTextMessageEvent(MessageEvent<TextMessageContent> event)
 	{
 		DBConnection conn = null;
-
-		System.out.println("SenderId: " + event.getSource().getSenderId());
-		System.out.println("UserId: " + event.getSource().getUserId());
-		System.out.println("Id: " + event.getMessage().getId());
 		StringBuilder sb = new StringBuilder();
+
 		// 入力文字を取得
 		String text = event.getMessage().getText();
 
 		// ユーザIDを取得
 		String user_id = event.getSource().getUserId();
+
+		System.out.println("UserId: " + user_id.toString());
 
 		// プロセス結果
 		String ret_process = "process successful.";
@@ -209,8 +215,8 @@ public class ProcessReplyMessage
 
 			        	//
 						sb.append("< Operations Recive Commands >\n");
-						sb.append("１）run・・・Run specified application.\n");
-						sb.append("２）close・・・Activate the specified application.\n");
+						sb.append("１）run ---> Run specified application.\n");
+						sb.append("２）close ---> Activate the specified application.\n");
 						//sb.append("３）reboot・・・Restart specified application.\n");
 						sb.append("\n");
 						sb.append("■Apps\n");
@@ -250,7 +256,7 @@ public class ProcessReplyMessage
 					}
 					else
 					{
-						Thread.sleep(60000); // 60秒待機
+						Thread.sleep(60); // 60秒待機
 						if (Utility.ProcessExecute(conn, 0, user_id.toString(), text) == false)
 						{
 							ret_process = "process failed.";
@@ -262,16 +268,16 @@ public class ProcessReplyMessage
 				{
 					// @メニュー
 					sb.append("< Recive Commands >\n");
-					sb.append("symbols\n");
+					sb.append("１）symbols\n");
 					sb.append("    ---> Return the registered symbol list.\n");
 					sb.append("\n");
-					sb.append("symbol=Symbol name\n");
+					sb.append("２）symbol=Symbol name\n");
 					sb.append("    ---> Return tick information of designated symbol.\n");
 					sb.append("\n");
-					sb.append("status\n");
+					sb.append("３）status\n");
 					sb.append("    ---> Return check contents of communication status.\n");
 					sb.append("\n");
-					sb.append("operations\n");
+					sb.append("４）operations\n");
 					sb.append("    ---> Perform application operations.\n");
 
 					text = sb.toString();
