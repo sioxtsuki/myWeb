@@ -108,12 +108,12 @@ public class Utility
 	 */
 	public static String GetProcessInfo(DBConnection conn, String user_id, String text)
 	{
-		String res = "";
+		String res = "invalid application.";
 		String[] values = text.split("=");
 
 		if (values.length == 1)
 		{
-			return "invalid application.";
+			return res.toString();
 		}
 
 		String[] appls = values[1].split(",");
@@ -164,9 +164,6 @@ public class Utility
 						sb.append(datas[4]);
 						sb.append("\n");
 
-						res = sb.toString();
-						sb.delete(0, sb.length());
-						sb = null;
 						break;
 					}
 				}
@@ -176,6 +173,13 @@ public class Utility
 		{
 			// TODO 自動生成された catch ブロック
 			System.out.println(e.getCause());
+		}
+
+		if (sb.length() > 0)
+		{
+			res = sb.toString();
+			sb.delete(0, sb.length());
+			sb = null;
 		}
 
 		return (res);
