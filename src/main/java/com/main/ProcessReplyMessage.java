@@ -37,18 +37,12 @@ import com.linecorp.bot.spring.boot.annotation.EventMapping;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
 import com.utility.Constants;
 import com.utility.DBConnection;
-import com.utility.Utility;
 
 @LineMessageHandler
 public class ProcessReplyMessage
 {
 	@Autowired
 	private LineMessagingService lineMessagingService;
-
-	// プライベート文字列
-	private String[] strPrivates = {"kerberos", "よし","ケルベロス","おいで",",お手", "お座り","塩月", "ごはん","長谷川"};
-	private String[] strPermissions = { "塩月", "ごはん"};
-
 
 	/**
 	 * ディスプレイ名を返却
@@ -101,9 +95,6 @@ public class ProcessReplyMessage
 	@EventMapping
 	public void handleTextMessageEvent(MessageEvent<TextMessageContent> event)
 	{
-		DBConnection conn = null;
-		StringBuilder sb = new StringBuilder();
-
 		// 入力文字を取得
 		String text = event.getMessage().getText();
 
@@ -112,200 +103,26 @@ public class ProcessReplyMessage
 
 		System.out.println("UserId: " + user_id.toString());
 
-		// プロセス結果
-		String ret_process = "process successful.";
+		BotApiResponse apiResponse = null;
 
-		// プライベート判定フラグ
-		boolean IsPrivate = false;
-		boolean IsPermissions = false;
-
-		//---------------------------
-		// リプライ処理
-		//---------------------------
 		try
 		{
-			// @プライベート文字列判定
-			for (String strPrivate : strPrivates)
-			{
-				if (text.equals(strPrivate))
-				{
-					for (String strPermission : strPermissions)
-					{
-						if (text.equals(strPermission))
-						{
-							IsPermissions = true;
-							break;
-						}
-					}
-					IsPrivate = true;
-					break;
-				}
-			}
-
-			if (IsPrivate == true )
-			{
-				//*********************************
-				// プライベート文字列の場合
-				//*********************************
-				text = "ガルルw";
-				if (IsPermissions == true)
-					text = "ワン!";
-			}
-			else
-			{
-				//*********************************
-				// 業務文字列の場合
-				//*********************************
-				if (Utility.CompareString(text, "symbols") == true)
-				{
-					// @登録シンボル名情報を取得
-					conn = Utility.GetConn();
-					text = Utility.GetSymbols(conn);
-				}
-				else if (Utility.StartsWithString(text, "symbol=") == true)
-				{
-					// @指定シンボルの現在のTick情報を取得
-					String[] symbols = text.split("=");
-
-					if (symbols.length < 2)
-					{
-						text = "invalid symbol.";
-					}
-					else
-					{
-						conn = Utility.GetConn();
-			        	text = Utility.GetRate(conn, symbols[1].trim().toString());
-					}
-				}
-				else if (Utility.CompareString(text,"check") == true)
-				{
-					// @現在の接続状況
-					conn = Utility.GetConn();
-					text = Utility.IsRate_Proess(conn);
-
-					if (text.isEmpty() == true) // 返却結果が空の場合
-						text = "fine.";
-				}
-				else if (Utility.CompareString(text, "operations") == true)
-				{
-					// @アプリケーション操作:サーバー選択
-					conn = Utility.GetConn();
-					sb.append("Which server would you like to select ?\n");
-					sb.append("\n");
-					sb.append(Utility.GetServer(conn));
-					sb.append("\n");
-					sb.append("※ An example）server=ID\n");
-
-					text = sb.toString();
-				}
-				else if (Utility.StartsWithString(text, "server=") == true)
-				{
-					// @指定サーバーのアプリを制御
-					String[] servers = text.split("=");
-
-					if (servers.length < 2)
-					{
-						text = "invalid server.";
-					}
-					else
-					{
-						String server_id = servers[1].trim().toString();
-						conn = Utility.GetConn();
-			        	text = Utility.GetProcessesByServerId(conn, user_id.toString(), server_id.toString(),
-			        			new String[]{"id", "status"});
-
-			        	//
-						sb.append("< Operations Recive Commands >\n");
-						sb.append("１）run ---> Run specified application.\n");
-						sb.append("２）close ---> Activate the specified application.\n");
-						sb.append("３）info ---> Return application operation info.\n");
-						//sb.append("３）reboot・・・Restart specified application.\n");
-						sb.append("\n");
-						sb.append("■Apps\n");
-						sb.append(Utility.EditAppsText(text));
-						sb.append("\n");
-						sb.append("※ An example）command=Apps,・・・\n");
-						text = sb.toString();
-					}
-				}
-				else if (Utility.StartsWithString(text, "run=") == true)
-				{
-					// @アプリケーション操作:アプリ実行
-					conn = Utility.GetConn();
-					if (Utility.ProcessExecute(conn, 0, user_id.toString(), text) == false)
-					{
-						ret_process = "process failed.";
-					}
-					text = ret_process;
-				}
-				else if (Utility.StartsWithString(text, "close=") == true)
-				{
-					// @アプリケーション操作:アプリ終了
-					conn = Utility.GetConn();
-					if (Utility.ProcessExecute(conn, 1, user_id.toString(), text) == false)
-					{
-						ret_process = "process failed.";
-					}
-					text = ret_process;
-				}
-				else if (Utility.StartsWithString(text, "info=") == true)
-				{
-					// @アプリケーション操作:アプリ稼働状態
-					conn = Utility.GetConn();
-					text = Utility.GetProcessInfo(conn, user_id.toString(), text);
-				}
-				else
-				{
-					// @メニュー
-					sb.append("< Recive Commands >\n");
-					sb.append("１）symbols\n");
-					sb.append("    ---> Return the registered symbol list.\n");
-					sb.append("\n");
-					sb.append("２）symbol=Symbol name\n");
-					sb.append("    ---> Return tick information of designated symbol.\n");
-					sb.append("\n");
-					sb.append("３）check\n");
-					sb.append("    ---> Return check contents of communication status.\n");
-					sb.append("\n");
-					sb.append("４）operations\n");
-					sb.append("    ---> Perform application operations.\n");
-
-					text = sb.toString();
-					// 上記以外の場合、オウム返し
-//					text = event.getMessage().getText();
-				}
-			}
+			// テキスト内容に応じたメッセージの返却
+			text = com.process.Process.GetReplyMessage(text, user_id);
 
 			// リプライ実行
-			final BotApiResponse apiResponse = lineMessagingService
+			apiResponse = lineMessagingService
 			    .replyMessage(new ReplyMessage(event.getReplyToken(),
 			    		Collections.singletonList(new TextMessage(text.toString()))))
 			    			.execute().body();
-
-			System.out.println("Sent messages: " + apiResponse);
 		}
-		catch(Exception e)
+		catch (IOException | SQLException e)
 		{
+			// TODO 自動生成された catch ブロック
 			System.out.println(e.getCause());
 		}
-		finally
-		{
-			if (conn != null)
-			{
-				try
-				{
-					conn.getConnection().close();
-					conn = null;
-				}
-				catch (SQLException e)
-				{
-					// TODO 自動生成された catch ブロック
-					System.out.println(e.getCause());
-				}
-			}
-			sb.delete(0, sb.length());
-			sb = null;
-		}
+
+		System.out.println("Sent messages: " + apiResponse);
 	}
 
 	/**

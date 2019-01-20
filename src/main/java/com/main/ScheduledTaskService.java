@@ -3,8 +3,6 @@ package com.main;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -21,8 +19,8 @@ import com.utility.Constants;
 @Component
 public class ScheduledTaskService
 {
-	private int i = 0;
-	private static final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+	//private int i = 0;
+	//private static final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
 	@Autowired
 	private LineMessagingClient lineMessagingClient;
@@ -31,7 +29,7 @@ public class ScheduledTaskService
 	//private ProcessPushMessage message;
 
     /**
-     *
+     * プッシュメッセージスケジュール
      */
     @Scheduled(initialDelay=0, fixedDelay=60000)
     public void executeAlarm()
@@ -44,8 +42,10 @@ public class ScheduledTaskService
         {
         	resource = new ClassPathResource(Constants.PROP_PATH);
         	props = PropertiesLoaderUtils.loadProperties(resource);
+
         	message = new ProcessPushMessage(lineMessagingClient);
         	message.SetProps(props);
+
             //プッシュする処理を呼び出す
 			message.pushBurnablesAlarm();
 
@@ -70,6 +70,6 @@ public class ScheduledTaskService
     		}
     	}
 
-        System.out.println("実行回数: " + ++i + ", 実行時間: " + sdf.format(new Date()));
+        //System.out.println("実行回数: " + ++i + ", 実行時間: " + sdf.format(new Date()));
     }
 }

@@ -14,8 +14,33 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import com.factory.DBFactory;
 
+/**
+ * @author shiotsuki
+ *
+ * ユーティリティクラス
+ */
 public class Utility
 {
+	public final static String G_STR_RUN = "稼働";
+	public final static String G_STR_CLOSE = "停止";
+	public final static String G_STR_NONE = "未";
+
+	/**
+	 * 状態文言を返却
+	 *
+	 * @param value
+	 * @return
+	 */
+	private static String GetStatusValue(String value)
+	{
+		if (value.isEmpty() == true) // 空の場合
+		{
+			return G_STR_NONE;
+		}
+
+		return (value.equals("0") == true ? G_STR_CLOSE : G_STR_RUN);
+	}
+
 	/**
 	 * 文字列完全一致判定
 	 *
@@ -59,7 +84,7 @@ public class Utility
 			else
 			{
 				sb.append(" (");
-				sb.append(values[i].equals("0") ? "停止" : "稼働中");
+				sb.append(Utility.GetStatusValue(values[i]));
 				sb.append(")");
 				sb.append("\n");
 			}
@@ -146,7 +171,9 @@ public class Utility
 										"id", "system_id","server_id","status", "last_datetime"});
 
 						String[] datas = res.split("\n");
-						String strStatus = (datas[3].equals("0")? "停止":"稼働中");
+
+						// 状態文言値を取得
+						String strStatus = Utility.GetStatusValue(datas[3]);
 
 						sb.append("■");
 						sb.append(datas[0]);
@@ -236,17 +263,17 @@ public class Utility
 				{
 					if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
 					{
+						process_count++;
 						// 処理結果が返却されるまでループ
 						while (true)
 						{
-							Thread.sleep(1);
+							Thread.sleep(15);
 							strStatus = GetStatusByProcess(conn, process, server_id, new String[]{"status"});
 							if (Integer.parseInt(strStatus) != process_value)
 							{
 								break;
 							}
 						}
-						process_count++;
 					}
 				}
 			}
@@ -262,17 +289,17 @@ public class Utility
 						{
 							if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
 							{
+								process_count++;
 								// 処理結果が返却されるまでループ
 								while (true)
 								{
-									Thread.sleep(1);
+									Thread.sleep(15);
 									strStatus = GetStatusByProcess(conn, process, server_id, new String[]{"status"});
 									if (Integer.parseInt(strStatus) != process_value)
 									{
 										break;
 									}
 								}
-								process_count++;
 							}
 
 							break;
