@@ -177,7 +177,7 @@ public class ProcessReplyMessage
 			        	text = Utility.GetRate(conn, symbols[1].trim().toString());
 					}
 				}
-				else if (Utility.CompareString(text,"status") == true)
+				else if (Utility.CompareString(text,"check") == true)
 				{
 					// @現在の接続状況
 					conn = Utility.GetConn();
@@ -211,16 +211,18 @@ public class ProcessReplyMessage
 					{
 						String server_id = servers[1].trim().toString();
 						conn = Utility.GetConn();
-			        	text = Utility.GetProcessesByServerId(conn, user_id.toString(), server_id.toString());
+			        	text = Utility.GetProcessesByServerId(conn, user_id.toString(), server_id.toString(),
+			        			new String[]{"id", "status"});
 
 			        	//
 						sb.append("< Operations Recive Commands >\n");
 						sb.append("１）run ---> Run specified application.\n");
 						sb.append("２）close ---> Activate the specified application.\n");
+						sb.append("３）info ---> Return application operation info.\n");
 						//sb.append("３）reboot・・・Restart specified application.\n");
 						sb.append("\n");
 						sb.append("■Apps\n");
-						sb.append(text);
+						sb.append(Utility.EditAppsText(text));
 						sb.append("\n");
 						sb.append("※ An example）command=Apps,・・・\n");
 						text = sb.toString();
@@ -246,23 +248,11 @@ public class ProcessReplyMessage
 					}
 					text = ret_process;
 				}
-				else if (Utility.StartsWithString(text, "reboot=") == true)
+				else if (Utility.StartsWithString(text, "info=") == true)
 				{
-					// @アプリケーション操作:アプリ再起動
+					// @アプリケーション操作:アプリ稼働状態
 					conn = Utility.GetConn();
-					if (Utility.ProcessExecute(conn, 1, user_id.toString(), text) == false)
-					{
-						ret_process = "process failed.";
-					}
-					else
-					{
-						Thread.sleep(60); // 60秒待機
-						if (Utility.ProcessExecute(conn, 0, user_id.toString(), text) == false)
-						{
-							ret_process = "process failed.";
-						}
-					}
-					text = ret_process;
+					text = Utility.GetProcessInfo(conn, user_id.toString(), text);
 				}
 				else
 				{
@@ -274,7 +264,7 @@ public class ProcessReplyMessage
 					sb.append("２）symbol=Symbol name\n");
 					sb.append("    ---> Return tick information of designated symbol.\n");
 					sb.append("\n");
-					sb.append("３）status\n");
+					sb.append("３）check\n");
 					sb.append("    ---> Return check contents of communication status.\n");
 					sb.append("\n");
 					sb.append("４）operations\n");

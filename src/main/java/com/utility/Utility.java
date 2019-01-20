@@ -41,6 +41,34 @@ public class Utility
 	}
 
 	/**
+	 * アプリ一覧メッセージの編集
+	 *
+	 * @param text
+	 * @return
+	 */
+	public static String EditAppsText(String text)
+	{
+		StringBuilder sb = new StringBuilder();
+		String[] values = text.split("\n");
+		for (int i = 0; i < values.length; i++)
+		{
+			if (i %2 == 0) // 配列位置が偶数の場合
+			{
+				sb.append(values[i]);
+			}
+			else
+			{
+				sb.append(" (");
+				sb.append(values[i].equals("0") ? "停止" : "稼働中");
+				sb.append(")");
+				sb.append("\n");
+			}
+		}
+
+		return sb.toString();
+	}
+
+	/**
 	 * DBコネクションを返却
 	 *
 	 * @return
@@ -67,6 +95,90 @@ public class Utility
 		}
 
 		return (conn);
+	}
+
+	/**
+	 * 指定したアプリ情報を返却
+	 *
+	 * @param conn
+	 * @param process_value
+	 * @param user_id
+	 * @param text
+	 * @return
+	 */
+	public static String GetProcessInfo(DBConnection conn, String user_id, String text)
+	{
+		String res = "";
+		String[] values = text.split("=");
+
+		if (values.length == 1)
+		{
+			return "invalid application.";
+		}
+
+		String[] appls = values[1].split(",");
+		String server_id = "";
+		StringBuilder sb = new StringBuilder();
+
+		try
+		{
+			// サーバーIDを取得
+			server_id = GetMessageByUserrId(conn, user_id);
+			if (server_id.isEmpty() == true) // サーバーIDが存在しない場合は処理中断
+			{
+				return "invalid server.";
+			}
+
+			// サーバーIDに該当するアプリを取得
+			String strProcess_value = GetProcessesByServerId(conn, user_id, server_id, new String[]{"id"});
+			String[] processes = strProcess_value.split("\n");
+
+			// 指定のアプリが対象の場合
+			//count = appls.length;
+			for (String appl : appls)
+			{
+				for (String process : processes)
+				{
+					if (process.compareTo(appl) == 0) // 名称が一致した場合
+					{
+						res = GetStatusByProcess(conn, process, server_id,
+								new String[]{
+										"id", "system_id","server_id","status", "last_datetime"});
+
+						String[] datas = res.split("\n");
+						String strStatus = (datas[3].equals("0")? "停止":"稼働中");
+
+						sb.append("■");
+						sb.append(datas[0]);
+						sb.append("\n");
+						sb.append("system id: ");
+						sb.append(datas[1]);
+						sb.append("\n");
+						sb.append("server id: ");
+						sb.append(datas[2]);
+						sb.append("\n");
+						sb.append("status: ");
+						sb.append(strStatus);
+						sb.append("\n");
+						sb.append("datetime: ");
+						sb.append(datas[4]);
+						sb.append("\n");
+
+						res = sb.toString();
+						sb.delete(0, sb.length());
+						sb = null;
+						break;
+					}
+				}
+			}
+		}
+		catch (SQLException e)
+		{
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		}
+
+		return (res);
 	}
 
 	/**
@@ -110,7 +222,7 @@ public class Utility
 			}
 
 			// サーバーIDに該当するアプリを取得
-			String strProcess = GetProcessesByServerId(conn, user_id, server_id);
+			String strProcess = GetProcessesByServerId(conn, user_id, server_id, new String[]{"id"});
 			String[] processes = strProcess.split("\n");
 
 			if (IsAll == true) // 全アプリ対象の場合
@@ -124,7 +236,7 @@ public class Utility
 						while (true)
 						{
 							Thread.sleep(1);
-							strStatus = GetStatusByProcess(conn, process, server_id);
+							strStatus = GetStatusByProcess(conn, process, server_id, new String[]{"status"});
 							if (Integer.parseInt(strStatus) != process_value)
 							{
 								break;
@@ -150,7 +262,7 @@ public class Utility
 								while (true)
 								{
 									Thread.sleep(1);
-									strStatus = GetStatusByProcess(conn, process, server_id);
+									strStatus = GetStatusByProcess(conn, process, server_id, new String[]{"status"});
 									if (Integer.parseInt(strStatus) != process_value)
 									{
 										break;
@@ -183,7 +295,7 @@ public class Utility
 	 * @return
 	 * @throws SQLException
 	 */
-	public static String GetStatusByProcess(DBConnection conn, String process_id, String server_id) throws SQLException
+	public static String GetStatusByProcess(DBConnection conn, String process_id, String server_id, String[] columns) throws SQLException
 	{
 		String res = "";
 	   	PreparedStatement ps = null;
@@ -195,7 +307,7 @@ public class Utility
     	String tb_process = conn.GetProps().getProperty("tb.process");
 
     	StringBuilder sbFindSQL = new StringBuilder();
-    	sbFindSQL.append("SELECT status FROM ");
+    	sbFindSQL.append("SELECT * FROM ");
     	sbFindSQL.append(tb_process.toString());
     	sbFindSQL.append(" WHERE id= ? AND server_id=?");
 
@@ -221,7 +333,14 @@ public class Utility
 
 						while (rs.next())
 						{
-							sbData.append(rs.getString("status"));
+							for (String column : columns) // 指定カラム数分ループ
+							{
+								sbData.append(rs.getString(column.trim().toString()));
+								if (columns.length > 2)
+								{
+									sbData.append("\n");
+								}
+							}
 						}
 
 						rs.close();
@@ -513,7 +632,7 @@ public class Utility
 	 * @return
 	 * @throws SQLException
 	 */
-	public static String GetProcessesByServerId(DBConnection conn, String user_id, String server_id) throws SQLException
+	public static String GetProcessesByServerId(DBConnection conn, String user_id, String server_id, String[] columns) throws SQLException
 	{
 		String res = "";
 	   	PreparedStatement ps = null;
@@ -525,7 +644,7 @@ public class Utility
     	String tb_process = conn.GetProps().getProperty("tb.process");
 
     	StringBuilder sbFindSQL = new StringBuilder();
-    	sbFindSQL.append("SELECT id, system_id, permissions, process FROM ");
+    	sbFindSQL.append("SELECT * FROM ");
     	sbFindSQL.append(tb_process.toString());
     	sbFindSQL.append(" WHERE server_id= ? AND permissions=?");
 
@@ -551,8 +670,11 @@ public class Utility
 
 						while (rs.next())
 						{
-							sbData.append(rs.getString("id"));
-							sbData.append("\n");
+							for (String column : columns)
+							{
+								sbData.append(rs.getString(column.trim().toString()));
+								sbData.append("\n");
+							}
 						}
 
 						rs.close();
