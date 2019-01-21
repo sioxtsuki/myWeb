@@ -1,7 +1,9 @@
 package com.process;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 
+import com.entity.MenuBeans;
 import com.entity.UserBeans;
 import com.utility.DBConnection;
 import com.utility.Utility;
@@ -16,6 +18,72 @@ public class Process
 	// プライベート文字列
 	private static final String[] strPrivates = {"kerberos", "よし","ケルベロス","おいで",",お手", "お座り","塩月", "ごはん","長谷川"};
 	private static final String[] strPermissions = { "塩月", "ごはん"};
+
+	/**
+	 * テキスト内容に応じたメッセージの返却
+	 *
+	 * @param text
+	 * @param user_id
+	 * @return
+	 * @throws SQLException
+	 */
+	public static String GetReplyMessageEx(String text, String user_id) throws SQLException
+	{
+		String res = "";
+		DBConnection conn = null;
+		ArrayList<MenuBeans> menus = null;
+
+		try
+		{
+			// ユーザ情報を取得
+			UserBeans user = Utility.GetUserInfo(conn, user_id);
+			// DBコネクションを取得
+			conn = Utility.GetConn();
+			// メニューリストを取得
+			menus = Utility.GetMenuInfo(conn, -1, user.getAuthority());
+
+			for (MenuBeans menu: menus)
+			{
+				if (menu.getType() == 1) // ディティールの場合
+				{
+					if (Utility.StartsWithString(text, menu.getName()) == true)
+					{
+
+					}
+				}
+			}
+
+
+		}
+		catch(Exception e)
+		{
+			res = e.getCause().getMessage().toString();
+		}
+		finally
+		{
+			if (menus != null)
+			{
+				menus.clear();
+				menus = null;
+			}
+
+			if (conn != null)
+			{
+				try
+				{
+					conn.getConnection().close();
+					conn = null;
+				}
+				catch (SQLException e)
+				{
+					res = e.getCause().getMessage().toString();
+					System.out.println(e.getCause());
+				}
+			}
+		}
+
+		return res;
+	}
 
 	/**
 	 * テキスト内容に応じたメッセージの返却
@@ -149,26 +217,32 @@ public class Process
 						res = Utility.GetProcessesByServerId(conn, user_id.toString(), server_id.toString(),
 			        			new String[]{"id", "status"});
 
-			        	//
-						sb.append("< Operations Recive Commands >\n");
-						sb.append("１）run\n");
-						sb.append("    ---> Run specified application.\n");
-						sb.append("\n");
-						sb.append("２）close\n");
-						sb.append("    ---> Activate the specified application.\n");
-						sb.append("\n");
-						sb.append("３）info\n");
-						sb.append("    ---> Return application operation info.\n");
-						//sb.append("３）reboot・・・Restart specified application.\n");
-						sb.append("\n");
-						sb.append("■Apps\n");
-						sb.append(Utility.EditAppsText(res));
-						sb.append("\n");
-						sb.append("※ An example）command=Apps,・・・\n");
-						res = sb.toString();
+						// データベースへメッセージを登録
+			        	if (Utility.AddMessageByUserId(conn, user_id, server_id) == true)
+			        	{
+							sb.append("< Operations Recive Commands >\n");
+							sb.append("１）start\n");
+							sb.append("    ---> Run specified application.\n");
+							sb.append("\n");
+							sb.append("２）stop\n");
+							sb.append("    ---> Activate the specified application.\n");
+							sb.append("\n");
+							sb.append("３）restart\n");
+							sb.append("    ---> Restart the application.\n");
+							sb.append("\n");
+							sb.append("４）info\n");
+							sb.append("    ---> Return application operation info.\n");
+							sb.append("\n");
+							sb.append("■Apps\n");
+							sb.append(Utility.EditAppsText(res));
+							sb.append("\n");
+							sb.append("※ An example）command=Apps,・・・\n");
+							res = sb.toString();
+			        	}
+
 					}
 				}
-				else if (Utility.StartsWithString(tmpText, "run=") == true)
+				else if (Utility.StartsWithString(tmpText, "start=") == true)
 				{
 					//*********************************
 					// @アプリケーション操作:アプリ実行
@@ -178,9 +252,11 @@ public class Process
 					{
 						ret_process = "process failed.";
 					}
-					res = ret_process;
+					res += Utility.G_STR_START_VALUE;
+					res += " ";
+					res += ret_process;
 				}
-				else if (Utility.StartsWithString(tmpText, "close=") == true)
+				else if (Utility.StartsWithString(tmpText, "stop=") == true)
 				{
 					//*********************************
 					// @アプリケーション操作:アプリ終了
@@ -190,12 +266,35 @@ public class Process
 					{
 						ret_process = "process failed.";
 					}
-					res = ret_process;
+					res += Utility.G_STR_STOP_VALUE;
+					res += " ";
+					res += ret_process;
+				}
+				else if (Utility.StartsWithString(tmpText, "restart=") == true)
+				{
+					//*********************************
+					// @アプリケーション操作:アプリ再起動
+					//*********************************
+					conn = Utility.GetConn();
+					if (Utility.ProcessExecute(conn, 1, user_id.toString(), tmpText) == false) // アプリ停止
+					{
+						ret_process = "process failed.";
+					}
+					if (ret_process.compareTo("process successful.") == 0) // 成功の場合
+					{
+						if (Utility.ProcessExecute(conn, 0, user_id.toString(), tmpText) == false) // アプリ起動
+						{
+							ret_process = "process failed.";
+						}
+					}
+					res += Utility.G_STR_RESTART_VALUE;
+					res += " ";
+					res += ret_process;
 				}
 				else if (Utility.StartsWithString(tmpText, "info=") == true)
 				{
 					//*********************************
-					// @アプリケーション操作:アプリ稼働状態
+					// @アプリケーション操作:アプリ情報
 					//*********************************
 					conn = Utility.GetConn();
 					res = Utility.GetProcessInfo(conn, user_id.toString(), tmpText);

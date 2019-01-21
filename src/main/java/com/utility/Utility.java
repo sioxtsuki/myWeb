@@ -13,6 +13,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import com.entity.MenuBeans;
 import com.entity.ProcessBeans;
 import com.entity.UserBeans;
 import com.factory.DBFactory;
@@ -24,9 +25,12 @@ import com.factory.DBFactory;
  */
 public class Utility
 {
-	public final static String G_STR_RUN = "稼働";
-	public final static String G_STR_CLOSE = "停止";
+	public final static String G_STR_START = "稼働";
+	public final static String G_STR_STOP = "停止";
 	public final static String G_STR_NONE = "未";
+	public final static String G_STR_START_VALUE = "start";
+	public final static String G_STR_STOP_VALUE = "stop";
+	public final static String G_STR_RESTART_VALUE = "restart";
 
 	/**
 	 * 状態文言を返却
@@ -41,7 +45,7 @@ public class Utility
 			return G_STR_NONE;
 		}
 
-		return (value.equals("0") == true ? G_STR_CLOSE : G_STR_RUN);
+		return (value.equals("0") == true ? G_STR_STOP : G_STR_START);
 	}
 
 	/**
@@ -123,6 +127,99 @@ public class Utility
 		}
 
 		return (conn);
+	}
+
+	/**
+	 * 指定したメニュー情報を返却
+	 *
+	 * @param conn
+	 * @param user_id
+	 * @return
+	 */
+	public static ArrayList<MenuBeans> GetMenuInfo(DBConnection conn, int fase_id, int authority_id)
+	{
+	   	PreparedStatement ps = null;
+    	ResultSet rs = null;
+    	MenuBeans menu = null;
+    	ArrayList<MenuBeans> list = null;
+
+    	if (conn == null)
+    		return list;
+
+    	StringBuilder sbFindSQL = new StringBuilder();
+    	String tb_menu = conn.GetProps().getProperty("tb.menu");
+    	sbFindSQL.append("SELECT * FROM ");
+    	sbFindSQL.append(tb_menu.toString());
+    	sbFindSQL.append(" WHERE authority_id<=? AND permissions=1");
+
+    	if (fase_id != -1) // フェーズが設定 ?
+    	{
+    		sbFindSQL.append(" AND fase_id=?");
+    	}
+		sbFindSQL.append(" ORDER BY fase_id, number ASC");
+
+    	try
+        {
+			ps = conn.getPreparedStatement(sbFindSQL.toString(), null);
+			if (ps != null)
+			{
+				ps.clearParameters();
+				ps.setInt(1, authority_id);
+
+				if (fase_id != -1) // フェーズが設定 ?
+		    	{
+		    		ps.setInt(1, fase_id);
+		    	}
+
+				rs = ps.executeQuery(); // クエリ実行
+				if (rs != null)
+				{
+					rs.last();
+					int number_of_row = rs.getRow();
+					rs.beforeFirst(); //最初に戻る
+
+					if ((number_of_row > 0) == true) // レコードが存在する場合
+					{
+				    	list = new ArrayList<MenuBeans>();
+
+				    	while (rs.next())
+						{
+							menu = new MenuBeans();
+							menu.setFase_id(rs.getInt("fase_id"));
+							menu.setNumber(rs.getInt("number"));
+							menu.setAuthority_id(rs.getInt("authority_id"));
+							menu.setType(rs.getInt("type"));
+							menu.setName(rs.getString("name"));
+							menu.setContents(rs.getString("contents"));
+							menu.setPermissions(rs.getInt("permissions"));
+							list.add(menu);
+						}
+
+						rs.close();
+
+					}
+				}
+
+				ps.close();
+			}
+    	}
+        catch ( SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+        finally
+        {
+        	if (rs != null)
+        	{
+        		rs = null;
+        	}
+        	if (ps != null)
+        	{
+        		ps = null;
+        	}
+        }
+
+    	return list;
 	}
 
 	/**
@@ -838,7 +935,7 @@ public class Utility
 				{
 					rs.last();
 					int number_of_row = rs.getRow();
-					rs.beforeFirst();   //最初に戻る
+					rs.beforeFirst(); //最初に戻る
 
 					if ((number_of_row > 0) == true) // レコードが存在する場合
 					{
@@ -863,13 +960,6 @@ public class Utility
 				}
 
 				ps.close();
-
-				// データベースへメッセージを登録
-	        	if (AddMessageByUserId(conn, user_id, server_id) == false)
-	        	{
-	        		// TODO
-	        	}
-
 			}
     	}
         catch ( SQLException e)

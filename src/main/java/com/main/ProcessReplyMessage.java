@@ -369,7 +369,7 @@ public class ProcessReplyMessage
 					ps.setString(2, displyName.toString()); // ディスプレイ名
 					ps.setString(3, bot_id.toString()); // ボットID
 					ps.setInt(4, 1); // 有効フラグ
-					ps.setInt(5, 0); // 権限
+					ps.setInt(5, 0); // 権限（初期値 = user）
 					ps.setString(6, crypto_passwd.toString()); // パスワード
 
 					ret = ps.executeUpdate();
