@@ -14,6 +14,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import com.entity.ProcessBeans;
+import com.entity.UserBeans;
 import com.factory.DBFactory;
 
 /**
@@ -122,6 +123,91 @@ public class Utility
 		}
 
 		return (conn);
+	}
+
+	/**
+	 * 指定ユーザ情報を返却
+	 *
+	 * @param conn
+	 * @param user_id
+	 * @return
+	 */
+	public static UserBeans GetUserInfo(DBConnection conn, String user_id)
+	{
+	   	PreparedStatement ps = null;
+    	ResultSet rs = null;
+    	UserBeans user = null;
+
+    	if (conn == null)
+    		return null;
+
+    	//String tb_user = conn.GetProps().getProperty("tb.user");
+    	String bot_id = conn.GetProps().getProperty("id");
+
+    	StringBuilder sbFindSQL = new StringBuilder();
+    	sbFindSQL.append("SELECT A.user_id, A.display_name, A.bot_id,A.permissions,A.authority,B.name,A.passwd,A.last_login FROM ");
+    	sbFindSQL.append("mtb_linebot_user A INNER JOIN mtb_linebot_authority B");
+    	sbFindSQL.append(" WHERE A.authority = B.id AND A.user_id =? AND A.bot_id=?");
+
+    	try
+        {
+			ps = conn.getPreparedStatement(sbFindSQL.toString(), null);
+			if (ps != null)
+			{
+				ps.clearParameters();
+				ps.setString(1, user_id.toString());
+				ps.setString(2, bot_id.toString());
+
+				rs = ps.executeQuery(); // クエリ実行
+				if (rs != null)
+				{
+					rs.last();
+					int number_of_row = rs.getRow();
+					rs.beforeFirst(); //最初に戻る
+
+					if ((number_of_row > 0) == true) // レコードが存在する場合
+					{
+						String passwd = "";
+						while (rs.next())
+						{
+							user = new UserBeans();
+							user.setId(rs.getString("user_id"));
+							user.setDisplay_name(rs.getString("display_name"));
+							user.setBot_id(rs.getString("bot_id"));
+							user.setPermissions(rs.getInt("permissions"));
+							user.setAuthority(rs.getInt("authority"));
+							user.setAuthority_name(rs.getString("name"));
+							passwd = rs.getString("passwd");
+							user.setPasswd(Crypto.Composite(passwd).toString());
+							user.setLast_login(rs.getString("last_login"));
+							break;
+						}
+
+						rs.close();
+
+					}
+				}
+
+				ps.close();
+			}
+    	}
+        catch ( SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+        finally
+        {
+        	if (rs != null)
+        	{
+        		rs = null;
+        	}
+        	if (ps != null)
+        	{
+        		ps = null;
+        	}
+        }
+
+    	return user;
 	}
 
 	/**

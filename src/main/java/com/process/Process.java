@@ -2,6 +2,7 @@ package com.process;
 
 import java.sql.SQLException;
 
+import com.entity.UserBeans;
 import com.utility.DBConnection;
 import com.utility.Utility;
 
@@ -150,9 +151,14 @@ public class Process
 
 			        	//
 						sb.append("< Operations Recive Commands >\n");
-						sb.append("１）run ---> Run specified application.\n");
-						sb.append("２）close ---> Activate the specified application.\n");
-						sb.append("３）info ---> Return application operation info.\n");
+						sb.append("１）run\n");
+						sb.append("    ---> Run specified application.\n");
+						sb.append("\n");
+						sb.append("２）close\n");
+						sb.append("    ---> Activate the specified application.\n");
+						sb.append("\n");
+						sb.append("３）info\n");
+						sb.append("    ---> Return application operation info.\n");
 						//sb.append("３）reboot・・・Restart specified application.\n");
 						sb.append("\n");
 						sb.append("■Apps\n");
@@ -194,6 +200,22 @@ public class Process
 					conn = Utility.GetConn();
 					res = Utility.GetProcessInfo(conn, user_id.toString(), tmpText);
 				}
+				else if (Utility.CompareString(tmpText, "user") == true)
+				{
+					//*********************************
+					// @ユーザ情報
+					//*********************************
+					conn = Utility.GetConn();
+					UserBeans user = Utility.GetUserInfo(conn, user_id.toString());
+
+					sb.append("■Information");
+					sb.append("\npasswd: ");
+					sb.append(user.getPasswd());
+					sb.append("\nauthority: ");
+					sb.append(user.getAuthority_name());
+
+					res = sb.toString();
+				}
 				else
 				{
 					//*********************************
@@ -211,6 +233,9 @@ public class Process
 					sb.append("\n");
 					sb.append("４）operations\n");
 					sb.append("    ---> Perform application operations.\n");
+					sb.append("\n");
+					sb.append("５）user\n");
+					sb.append("    ---> Return user information.\n");
 
 					res = sb.toString();
 					// 上記以外の場合、オウム返し
