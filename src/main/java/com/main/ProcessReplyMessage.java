@@ -38,6 +38,10 @@ import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
 import com.utility.Constants;
 import com.utility.DBConnection;
 
+/**
+ * @author shiotsuki
+ *
+ */
 @LineMessageHandler
 public class ProcessReplyMessage
 {

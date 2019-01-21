@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
 
@@ -12,6 +13,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import com.entity.ProcessBeans;
 import com.factory.DBFactory;
 
 /**
@@ -166,7 +168,7 @@ public class Utility
 				{
 					if (process.compareTo(appl) == 0) // 名称が一致した場合
 					{
-						res = GetStatusByProcess(conn, process, server_id,
+						res = GetProcessInfoByColumn(conn, process, server_id,
 								new String[]{
 										"id", "system_id","server_id","status", "last_datetime"});
 
@@ -252,6 +254,9 @@ public class Utility
 				return false;
 			}
 
+			// プロセスエンティティリスト
+			ArrayList<ProcessBeans> beansList = new ArrayList<ProcessBeans>();
+
 			// サーバーIDに該当するアプリを取得
 			String strProcess = GetProcessesByServerId(conn, user_id, server_id, new String[]{"id"});
 			String[] processes = strProcess.split("\n");
@@ -261,14 +266,23 @@ public class Utility
 				count = processes.length;
 				for (String process : processes)
 				{
-					if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
+					ProcessBeans beans = new ProcessBeans();
+					beans.setId(process);
+					beans.setProcess(process_value);
+					beansList.add(beans);
+				}
+
+				// プロセス情報更新
+				if (UpdateProcessByProcessId(conn, beansList) == true)
+				{
+					Thread.sleep(5000);
+					for (ProcessBeans beans : beansList)
 					{
 						process_count++;
 						// 処理結果が返却されるまでループ
 						while (true)
 						{
-							Thread.sleep(15);
-							strStatus = GetStatusByProcess(conn, process, server_id, new String[]{"status"});
+							strStatus = GetProcessInfoByColumn(conn, beans.getId().toString(), server_id, new String[]{"status"});
 							if (Integer.parseInt(strStatus) != process_value)
 							{
 								break;
@@ -287,26 +301,36 @@ public class Utility
 					{
 						if (process.compareTo(appl) == 0) // 名称が一致した場合
 						{
-							if (UpdateProcessByProcessId(conn, process.toString(), process_value) == true)
-							{
-								process_count++;
-								// 処理結果が返却されるまでループ
-								while (true)
-								{
-									Thread.sleep(15);
-									strStatus = GetStatusByProcess(conn, process, server_id, new String[]{"status"});
-									if (Integer.parseInt(strStatus) != process_value)
-									{
-										break;
-									}
-								}
-							}
-
+							ProcessBeans beans = new ProcessBeans();
+							beans.setId(process);
+							beans.setProcess(process_value);
+							beansList.add(beans);
 							break;
 						}
 					}
 				}
+
+				// データベース更新処理
+				if (UpdateProcessByProcessId(conn, beansList) == true)
+				{
+					Thread.sleep(5000);
+					for (ProcessBeans beans : beansList)
+					{
+						process_count++;
+						// 処理結果が返却されるまでループ
+						while (true)
+						{
+							strStatus = GetProcessInfoByColumn(conn, beans.getId().toString(), server_id, new String[]{"status"});
+							if (Integer.parseInt(strStatus) != process_value)
+							{
+								break;
+							}
+						}
+					}
+				}
 			}
+			beansList.clear();
+			beansList = null;
 		}
 		catch (SQLException | InterruptedException e)
 		{
@@ -318,7 +342,7 @@ public class Utility
 	}
 
 	/**
-	 * 指定のプロセス状態を返却
+	 * 指定プロセス情報の指定したカラム値を返却
 	 *
 	 * @param conn
 	 * @param process_id
@@ -326,7 +350,7 @@ public class Utility
 	 * @return
 	 * @throws SQLException
 	 */
-	public static String GetStatusByProcess(DBConnection conn, String process_id, String server_id, String[] columns) throws SQLException
+	public static String GetProcessInfoByColumn(DBConnection conn, String process_id, String server_id, String[] columns) throws SQLException
 	{
 		String res = "";
 	   	PreparedStatement ps = null;
@@ -413,11 +437,14 @@ public class Utility
 	 * @return
 	 * @throws SQLException
 	 */
-	public static boolean UpdateProcessByProcessId(DBConnection conn, String process_id, int process_value) throws SQLException
+	public static boolean UpdateProcessByProcessId(DBConnection conn, ArrayList<ProcessBeans> beansList) throws SQLException
 	{
 		boolean res = false;
 	   	PreparedStatement ps = null;
     	ResultSet rs = null;
+
+    	if (beansList.size() == 0)
+    		return false;
 
     	if (conn == null)
     		return false;
@@ -427,29 +454,61 @@ public class Utility
 		SimpleDateFormat sdf = new SimpleDateFormat("YYYY/MM/DD HH:mm:ss");
     	int ret = 0; // 処理結果
 
+    	int count = 0;
+    	String strWhen = " case id";
+    	String strWhere = " WHERE id IN (";
+    	for (ProcessBeans beans : beansList)
+    	{
+    		count++;
+    		strWhen += " WHEN '";
+    		strWhen += beans.getId();
+    		strWhen += "' THEN ";
+    		strWhen += String.valueOf(beans.getProcess());
+    		strWhen += " ";
+
+    		strWhere += " '";
+    		strWhere += beans.getId();
+    		strWhere += "' ";
+
+    		if (count != beansList.size())
+    		{
+        		strWhere += ",";
+    		}
+    	}
+		strWhen += " END ";
+		strWhere += ")";
+
     	// 追加SQL
     	StringBuilder sbFindSQL = new StringBuilder();
     	sbFindSQL.append("UPDATE ");
     	sbFindSQL.append(tb_process.toString());
+    	sbFindSQL.append(" SET process=");
+    	sbFindSQL.append(strWhen.toString());
+    	sbFindSQL.append(" ,last_datetime=NOW() ");
+    	sbFindSQL.append(strWhere.toString());
+
+    	/*
+    	sbFindSQL.append("UPDATE ");
+    	sbFindSQL.append(tb_process.toString());
     	sbFindSQL.append(" SET process=?, last_datetime=?");
     	sbFindSQL.append(" WHERE id=?");
-
+    	 */
     	try
         {
 			// 更新処理
 			ps = conn.getPreparedStatement(sbFindSQL.toString(), null);
 			if (ps != null)
 			{
-				ps.clearParameters();
-				ps.setInt(1, process_value);
-				ps.setString(2, sdf.format(new Date()).toString());
-				ps.setString(3, process_id.toString());
+				//ps.clearParameters();
+				//ps.setInt(1, process_value);
+				//ps.setString(2, sdf.format(new Date()).toString());
+				//ps.setString(3, process_id.toString());
 
 				ret = ps.executeUpdate(); // クエリ実行
 
 				if (ret != 0) // 処理成功の場合
 				{
-					System.out.println("message add successful. [" + process_id.toString()+ "]");
+					//System.out.println("message add successful. [" + process_id.toString()+ "]");
 					res = true;
 				}
 
@@ -719,6 +778,7 @@ public class Utility
 
 				ps.close();
 
+				// データベースへメッセージを登録
 	        	if (AddMessageByUserId(conn, user_id, server_id) == false)
 	        	{
 	        		// TODO
