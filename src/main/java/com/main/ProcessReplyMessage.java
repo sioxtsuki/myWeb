@@ -3,9 +3,7 @@ package com.main;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -36,7 +34,9 @@ import com.linecorp.bot.model.response.BotApiResponse;
 import com.linecorp.bot.spring.boot.annotation.EventMapping;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
 import com.utility.Constants;
+import com.utility.Crypto;
 import com.utility.DBConnection;
+import com.utility.PasswordGenerator;
 
 /**
  * @author shiotsuki
@@ -292,13 +292,10 @@ public class ProcessReplyMessage
 	 * @throws SQLException
 	 */
 	@EventMapping
-	public Message handleFollowEvent(FollowEvent event) throws SQLException
+	public void handleFollowEvent(FollowEvent event)
 	{
 		// ユーザIDを取得
 		String user_id = event.getSource().getUserId().toString();
-
-		SimpleDateFormat sdf = new SimpleDateFormat("YYYY/MM/DD HH:mm:ss");
-
 
     	String res = "Signup failed.\nPlease apply again.";
     	DBConnection conn = null;
@@ -330,7 +327,7 @@ public class ProcessReplyMessage
 	    	StringBuilder sbAddSQL = new StringBuilder();
 	    	sbAddSQL.append("INSERT INTO ");
 	    	sbAddSQL.append(tb_user.toString());
-	    	sbAddSQL.append(" VALUES (?,?,?,?,?)");
+	    	sbAddSQL.append(" VALUES (?,?,?,?,?,?,NOW())");
 	    	//sbAddSQL.append("'" + user_id.toString() + "',");
 	    	//sbAddSQL.append("'" + bot_id.toString() + "',");
 	    	//sbAddSQL.append("1,");
@@ -361,21 +358,38 @@ public class ProcessReplyMessage
 					String displyName = GetDisplayName(
 							props.getProperty("line.bot.channelToken"), user_id.toString());
 
+					// パスワード作成
+					String passwd = PasswordGenerator.GetPassword();
+
+					// パスワード暗号化
+					String crypto_passwd = Crypto.PrintBin(Crypto.Cipher(passwd));
+
 					ps.clearParameters();
-					ps.setString(1, user_id.toString());
-					ps.setString(2, displyName.toString());
-					ps.setString(3, bot_id.toString());
-					ps.setInt(4, 1);
-					ps.setString(5, sdf.format(new Date()).toString());
+					ps.setString(1, user_id.toString()); // ユーザID
+					ps.setString(2, displyName.toString()); // ディスプレイ名
+					ps.setString(3, bot_id.toString()); // ボットID
+					ps.setInt(4, 1); // 有効フラグ
+					ps.setInt(5, 0); // 権限
+					ps.setString(6, crypto_passwd.toString()); // パスワード
+
 					ret = ps.executeUpdate();
 					if (ret != 0) // 処理成功の場合
 					{
 						System.out.println("user add successful. [" + user_id.toString() + "]");
 						res = "Welcome.\nThanking you in advance.";
+						res += "\nyour password: ";
+						res += passwd.toString();
 					}
 					ps.close();
 				}
 			}
+
+			// リプライ実行
+			final BotApiResponse apiResponse = lineMessagingService
+			    .replyMessage(new ReplyMessage(event.getReplyToken(),
+			    		Collections.singletonList(new TextMessage(res.toString()))))
+			    			.execute().body();
+
 
     	} catch (IOException e) {
 			// TODO 自動生成された catch ブロック
@@ -392,7 +406,12 @@ public class ProcessReplyMessage
 		} finally{
 			if (conn != null)
 			{
-				conn.getConnection().close();
+				try {
+					conn.getConnection().close();
+				} catch (SQLException e) {
+					// TODO 自動生成された catch ブロック
+					e.printStackTrace();
+				}
 				conn = null;
 			}
 			if (ps != null)
@@ -409,8 +428,9 @@ public class ProcessReplyMessage
 			}
 		}
 
+    	//String replyToken = event.getReplyToken();
+		//BotApiResponse apiResponse = null;
 
-		return new TextMessage(res.toString());
 	}
 
 	/**
