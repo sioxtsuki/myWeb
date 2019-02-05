@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Properties;
 
 import org.springframework.core.io.ClassPathResource;
@@ -834,7 +833,8 @@ public class Utility
     	StringBuilder sbFindSQL = new StringBuilder();
     	sbFindSQL.append("INSERT INTO ");
     	sbFindSQL.append(tb_message.toString());
-    	sbFindSQL.append(" VALUES(?,?,?,?)");
+    	sbFindSQL.append(" VALUES(?,?,?,NOW())");
+    	//Calendar cl = Calendar.getInstance();
 
     	try
         {
@@ -860,7 +860,7 @@ public class Utility
 				ps.setString(1, user_id.toString());
 				ps.setString(2, bot_id.toString());
 				ps.setString(3, message.toString());
-				ps.setString(4, sdf.format(new Date()).toString());
+				//ps.setString(4, sdf.format(cl.getTime()));
 
 				ret = ps.executeUpdate(); // クエリ実行
 
