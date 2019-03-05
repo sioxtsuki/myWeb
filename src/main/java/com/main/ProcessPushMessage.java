@@ -67,19 +67,24 @@ public class ProcessPushMessage
 
 			if (rates.size() > 1) // 該当レコードが存在する場合
 			{
+				int success_count = 0;
 				String strSymbol = props.getProperty("ban.symbols");
 
 				String[] symbols = strSymbol.split(",");
 
 				StringBuilder sb = new StringBuilder();
-				sb.append("■rate alert <demo>\r\n");
 				for (RateBeans beans : rates)
 				{
 					if (Utility.IsSymbolExists(symbols, beans.getSymbol()) == false) // チェック対象外の場合
 					{
+						if (success_count == 0)
+						{
+							sb.append("■rate alert <demo>\r\n");
+						}
 						sb.append(beans.getSymbol() + " : "
 								+ beans.getInterval() + "秒("
 								+ beans.GetStrCtm() + ")\r\n");
+						success_count++;
 					}
 
 				}

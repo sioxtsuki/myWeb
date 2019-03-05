@@ -79,7 +79,7 @@ public class TcpClient// implements Runnable
 					list.clear();
 					for (String val : values)
 					{
-						if (val.isEmpty() == true) continue;
+						if (val.toString().trim().isEmpty() == true) continue;
 						list.add(val);
 					}
 
