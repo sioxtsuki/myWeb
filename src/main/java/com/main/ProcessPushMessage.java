@@ -5,15 +5,18 @@ import java.net.URISyntaxException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
+import com.entity.RateBeans;
 import com.factory.DBFactory;
 import com.linecorp.bot.client.LineMessagingClient;
 import com.linecorp.bot.model.PushMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.response.BotApiResponse;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
+import com.network.TcpClient;
 import com.utility.DBConnection;
 import com.utility.Utility;
 
@@ -41,6 +44,105 @@ public class ProcessPushMessage
 		this.props = _props;
 	}
 
+
+	// TODO
+	public void pushMT4RateCheckProcessAlarm() throws URISyntaxException, IOException, SQLException, InterruptedException, ExecutionException, InstantiationException, IllegalAccessException
+	{
+    	DBConnection conn = null;
+    	PreparedStatement ps = null;
+    	ResultSet rs = null;
+    	String text = "";
+    	StringBuilder sbFindSQL = null;
+
+		try
+		{
+			conn = DBFactory.getConnection(this.props);
+
+			// MT4からレート情報を取得
+			TcpClient client = new TcpClient();
+			client.setHost(this.props.getProperty("server.ip"));
+			client.setPort(Integer.parseInt(props.getProperty("server.port")));
+
+			ArrayList<RateBeans> rates = client.send();
+
+			if (rates.size() > 1) // 該当レコードが存在する場合
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.append("■demo rate alert\r\n");
+				for (RateBeans beans : rates)
+				{
+					sb.append(beans.getSymbol() + " : "
+							+ beans.getInterval() + "秒("
+							+ beans.GetStrCtm() + ")\r\n");
+				}
+				text = sb.toString();
+				//System.out.println(text);
+
+
+				//text = Utility.IsRate_Proess(conn);
+		    	if (text.isEmpty() == false)
+		    	{
+			    	// BOT_IDを取得
+					String bot_id = this.props.getProperty("id").toString();
+
+					// ユーザ情報を取得
+					String tb_user = conn.GetProps().getProperty("tb.user");
+			    	sbFindSQL = new StringBuilder();
+					sbFindSQL.delete(0, sbFindSQL.length());
+					sbFindSQL.append("SELECT user_id FROM ");
+					sbFindSQL.append(tb_user.toString());
+					sbFindSQL.append(" WHERE permissions =? AND bot_id=?");
+
+					ps = conn.getPreparedStatement(sbFindSQL.toString(), null);
+					if (ps != null)
+					{
+						ps.clearParameters();
+						ps.setInt(1, 1);
+						ps.setString(2, bot_id.toString());
+						rs = ps.executeQuery();
+						if (rs != null)
+						{
+							// ラインへプッシュ
+							while (rs.next())
+							{
+								String user_id = rs.getString("user_id").toString();
+
+								//System.out.println(user_id.trim().toString());
+					        	@SuppressWarnings("unused")
+								final BotApiResponse response = this.lineMessagingClient
+					                                            .pushMessage(new PushMessage(user_id.toString(),
+					                                                         new TextMessage(text.toString()
+					 //                                                        new ConfirmTemplate("ごみ捨ては終わった？",
+					 //                                                        new MessageAction("はい", "はい"),
+					 //                                                        new MessageAction("いいえ", "いいえ")
+					                                                          ))).get();
+							}
+
+							rs.close();
+							rs = null;
+						}
+
+						ps.close();
+						ps = null;
+					}
+		    	}
+			}
+		}
+        finally
+        {
+        	if (conn != null)
+        	{
+        		conn.getConnection().close();
+        		conn = null;
+        	}
+
+        	if (sbFindSQL != null)
+        	{
+        		sbFindSQL.delete(0, sbFindSQL.length());
+    			sbFindSQL= null;
+        	}
+        }
+	}
 
     /**
      * @throws URISyntaxException

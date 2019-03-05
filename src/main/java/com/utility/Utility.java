@@ -820,7 +820,7 @@ public class Utility
 
     	String tb_message = conn.GetProps().getProperty("tb.message");
     	String bot_id = conn.GetProps().getProperty("id");
-		SimpleDateFormat sdf = new SimpleDateFormat("YYYY/MM/DD HH:mm:ss");
+		//SimpleDateFormat sdf = new SimpleDateFormat("YYYY/MM/DD HH:mm:ss");
     	int ret = 0; // 処理結果
 
 		// 削除SQL

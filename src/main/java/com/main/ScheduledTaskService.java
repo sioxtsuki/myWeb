@@ -47,7 +47,8 @@ public class ScheduledTaskService
         	message.SetProps(props);
 
             //プッシュする処理を呼び出す
-			message.pushBurnablesAlarm();
+//			message.pushBurnablesAlarm();
+        	message.pushMT4RateCheckProcessAlarm();
 
         }
         catch (URISyntaxException | SQLException | IOException | InstantiationException | IllegalAccessException | InterruptedException | ExecutionException e)
