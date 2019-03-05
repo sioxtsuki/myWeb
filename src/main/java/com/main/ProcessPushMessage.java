@@ -77,10 +77,11 @@ public class ProcessPushMessage
 				{
 					if (Utility.IsSymbolExists(symbols, beans.getSymbol()) == false) // チェック対象外の場合
 					{
-						if (success_count == 0)
-						{
+						// ヘッダーをセット
+						if (success_count == 0) // 最初レコードの場合
 							sb.append("■rate alert <demo>\r\n");
-						}
+
+						// ディティールをセット
 						sb.append(beans.getSymbol() + " : "
 								+ beans.getInterval() + "秒("
 								+ beans.GetStrCtm() + ")\r\n");
