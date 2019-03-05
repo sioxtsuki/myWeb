@@ -32,6 +32,24 @@ public class Utility
 	public final static String G_STR_RESTART_VALUE = "restart";
 
 	/**
+	 * シンボル名存在チェック
+	 * @param symbols
+	 * @param symbolname
+	 * @return
+	 */
+	public static boolean IsSymbolExists(String[] symbols, String symbolname)
+	{
+		for (String name: symbols)
+		{
+			if (name.equals(symbolname) == true)
+				return true;
+		}
+
+
+		return false;
+	}
+
+	/**
 	 * 状態文言を返却
 	 *
 	 * @param value

@@ -15,7 +15,8 @@ public class RateBeans
 		//Date date1 = new Date(this.ctm); "yyyy年MM月dd日 E曜日 H時mm分"
 		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
-		return format.format(new Date((this.ctm - 32400) * 1000));
+//		return format.format(new Date((this.ctm - 32400) * 1000));
+		return format.format(new Date((this.ctm) * 1000));
 
 	}
 
