@@ -81,7 +81,7 @@ public class ProcessPushMessage
 
 						// ディティールをセット
 						sb.append(beans.getSymbol() + " : "
-								+ beans.getInterval() + "秒("
+								+ beans.getInterval() + "秒 ("
 								+ beans.GetStrCtm() + ")\r\n");
 						success_count++;
 					//}
