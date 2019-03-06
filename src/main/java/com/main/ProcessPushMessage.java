@@ -64,7 +64,7 @@ public class ProcessPushMessage
 
 			ArrayList<RateBeans> rates = client.send();
 
-			if (rates.size() > 1) // 該当レコードが存在する場合
+			if (rates.size() >= 1) // 該当レコードが存在する場合
 			{
 				int success_count = 0;
 				//String strSymbol = props.getProperty("ban.symbols");
