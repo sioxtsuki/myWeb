@@ -35,6 +35,7 @@ public interface Constants {
 
 
 	public static final String PROP_PATH = "/application.properties";
+	public static final String CONF_PROP_PATH = "conf.properties";
 
 	// -----------------------------
 	// メッセージ関連

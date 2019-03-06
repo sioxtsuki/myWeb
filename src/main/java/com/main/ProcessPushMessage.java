@@ -1,5 +1,6 @@
 package com.main;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.PreparedStatement;
@@ -17,6 +18,7 @@ import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.response.BotApiResponse;
 import com.linecorp.bot.spring.boot.annotation.LineMessageHandler;
 import com.network.TcpClient;
+import com.utility.Constants;
 import com.utility.DBConnection;
 import com.utility.Utility;
 
@@ -52,6 +54,14 @@ public class ProcessPushMessage
     	ResultSet rs = null;
     	String text = "";
     	StringBuilder sbFindSQL = null;
+
+    	Properties conf_props = new Properties();
+    	conf_props.load(new FileInputStream(Constants.CONF_PROP_PATH));
+    	// 配信を許可しない場合
+    	if (conf_props.getProperty("ratechk.allow").toString().equals("0") == true)
+    	{
+    		return;
+    	}
 
 		try
 		{

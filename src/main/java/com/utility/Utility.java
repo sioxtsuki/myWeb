@@ -1,5 +1,7 @@
 package com.utility;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -30,6 +32,62 @@ public class Utility
 	public final static String G_STR_START_VALUE = "start";
 	public final static String G_STR_STOP_VALUE = "stop";
 	public final static String G_STR_RESTART_VALUE = "restart";
+
+	/**
+	 * レート配信Switch
+	 * @param value (0 ; 停止、1: 開始)
+	 * @return
+	 */
+	public static String RateCheckProcess(int value)
+	{
+		Properties props = new Properties();
+
+		// 定義情報を取得
+		try
+		{
+			props.setProperty("ratechk.allow", String.valueOf(value).toString());
+			props.store(new FileOutputStream(Constants.CONF_PROP_PATH), "Comments");
+			props.load(new FileInputStream(Constants.CONF_PROP_PATH));
+
+			if (props.getProperty("ratechk.allow").equals(String.valueOf(value).toString()) == false)
+			{
+				return "rate checker process failed.";
+			}
+
+		} catch (IOException e)
+		{
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
+
+		return "rate checker process successfull.";
+	}
+
+	/**
+	 * レートチェック状態確認
+	 * @return
+	 */
+	public static String RateCheckStateProcess()
+	{
+		Properties props = new Properties();
+
+		// 定義情報を取得
+		try
+		{
+			props.load(new FileInputStream(Constants.CONF_PROP_PATH));
+
+			if (props.getProperty("ratechk.allow").equals("0") == true)
+				return "stopping.";
+
+		} catch (IOException e)
+		{
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+			return e.getCause().getMessage().toString();
+		}
+
+		return "running.";
+	}
 
 	/**
 	 * シンボル名存在チェック

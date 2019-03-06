@@ -157,6 +157,19 @@ public class Process
 					conn = Utility.GetConn();
 					res = Utility.GetSymbols(conn);
 				}
+				else if (Utility.CompareString(tmpText, "stop") == true)
+				{
+					res = Utility.RateCheckProcess(0);
+				}
+				else if (Utility.CompareString(tmpText, "start") == true)
+				{
+					res = Utility.RateCheckProcess(1);
+				}
+				else if (Utility.CompareString(tmpText, "state") == true)
+				{
+					// レートチェック状態確認
+					res = Utility.RateCheckStateProcess();
+				}
 				else if (Utility.StartsWithString(tmpText, "symbol=") == true)
 				{
 					//*********************************
