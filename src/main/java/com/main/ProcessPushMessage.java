@@ -77,7 +77,7 @@ public class ProcessPushMessage
 					//{
 						// ヘッダーをセット
 						if (success_count == 0) // 最初レコードの場合
-							sb.append("■rate alert <demo>\r\n");
+							sb.append("■rate alert\r\n");
 
 						// ディティールをセット
 						sb.append(beans.getSymbol() + " : "
