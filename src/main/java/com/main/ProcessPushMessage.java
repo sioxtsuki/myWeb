@@ -23,7 +23,6 @@ import com.utility.Utility;
 @LineMessageHandler
 public class ProcessPushMessage
 {
-
 	private final LineMessagingClient lineMessagingClient;
 	private Properties props;
 
@@ -68,15 +67,14 @@ public class ProcessPushMessage
 			if (rates.size() > 1) // 該当レコードが存在する場合
 			{
 				int success_count = 0;
-				String strSymbol = props.getProperty("ban.symbols");
-
-				String[] symbols = strSymbol.split(",");
+				//String strSymbol = props.getProperty("ban.symbols");
+				//String[] symbols = strSymbol.split(",");
 
 				StringBuilder sb = new StringBuilder();
 				for (RateBeans beans : rates)
 				{
-					if (Utility.IsSymbolExists(symbols, beans.getSymbol()) == false) // チェック対象外の場合
-					{
+					//if (Utility.IsSymbolExists(symbols, beans.getSymbol()) == false) // チェック対象外の場合
+					//{
 						// ヘッダーをセット
 						if (success_count == 0) // 最初レコードの場合
 							sb.append("■rate alert <demo>\r\n");
@@ -86,7 +84,7 @@ public class ProcessPushMessage
 								+ beans.getInterval() + "秒("
 								+ beans.GetStrCtm() + ")\r\n");
 						success_count++;
-					}
+					//}
 
 				}
 				text = sb.toString();

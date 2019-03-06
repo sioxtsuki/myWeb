@@ -10,6 +10,7 @@ public class RateBeans
 	long ctm;
 	int interval;
 
+	// 文字列日付を返却
 	public String GetStrCtm()
 	{
 		//Date date1 = new Date(this.ctm); "yyyy年MM月dd日 E曜日 H時mm分"
