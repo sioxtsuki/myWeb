@@ -8,7 +8,9 @@ package com.utility;
  */
 public interface Constants
 {
-
+	// -----------------------------
+	// 処理タイプ
+	// -----------------------------
 	enum PROCESS_TYPE
 	{
 		PT_SUCCESS,
