@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 import com.entity.RateBeans;
+import com.utility.Constants;
 
 
 public class TcpClient// implements Runnable
@@ -30,11 +31,12 @@ public class TcpClient// implements Runnable
     //+------------------------------------------
 	//| Runメソッドの実装
     //+------------------------------------------
-    public ArrayList<RateBeans> send()
+    public Constants.PROCESS_TYPE run(String command, ArrayList<RateBeans> rates)
     {
-    	ArrayList<RateBeans> rates = new ArrayList<RateBeans>();
+    	//ArrayList<RateBeans> rates = new ArrayList<RateBeans>();
 		Socket socket = null;//ソケット
 
+		Constants.PROCESS_TYPE  pt_type = Constants.PROCESS_TYPE .PT_SUCCESS;
 		int count = 0;
 
 		try {
@@ -48,22 +50,20 @@ public class TcpClient// implements Runnable
 			InputStreamReader sok_isr = new InputStreamReader(sok_in);
 			BufferedReader sok_br = new BufferedReader(sok_isr);
 
-			String send = "RATECHK MASTER=mt4awk113|";	//キー1行入力
-			os.write(send.getBytes());//送信
+			//String send = "RATECHK MASTER=mt4awk113|";	//キー1行入力
+			os.write(command.getBytes());//送信
 
 			while(true)
 			{
 				String recive = sok_br.readLine();
 
-				if (recive == null)
-				{
-					break;
-				}
+				if (recive == null) break;
 
 				if (count == 0) // 最初のデータの場合
 				{
 					if (recive.equals("Success") == false) // エラーの場合は処理中断
 					{
+						pt_type = Constants.PROCESS_TYPE.PT_ERROR;
 						break;
 					}
 					count++;
@@ -103,6 +103,7 @@ public class TcpClient// implements Runnable
 		catch(Exception e)
 		{
 			System.out.println(e.toString());
+			pt_type = Constants.PROCESS_TYPE.PT_NETWORK_ERROR;
 		}
 
 		finally
@@ -116,9 +117,10 @@ public class TcpClient// implements Runnable
 			{
 				// TODO 自動生成された catch ブロック
 				System.out.println(e.toString());
+				pt_type = Constants.PROCESS_TYPE.PT_EXCEPTION_ERROR;
 			}
 		}
 
-    	return rates;
+    	return pt_type;
     }
 }

@@ -6,7 +6,16 @@ package com.utility;
  * @author shiotsuki
  *
  */
-public interface Constants {
+public interface Constants
+{
+
+	enum PROCESS_TYPE
+	{
+		PT_SUCCESS,
+		PT_NETWORK_ERROR,
+		PT_EXCEPTION_ERROR,
+		PT_ERROR;
+	}
 
 	// -----------------------------
 	// SQL関連
