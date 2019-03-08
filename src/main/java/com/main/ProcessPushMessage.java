@@ -97,12 +97,19 @@ public class ProcessPushMessage
 				StringBuilder sb = new StringBuilder();
 
 				int success_count = 0;
+				int beans_count = 0;
 				for (RateBeans beans : rates)
 				{
 					// 該当レコードが存在する場合
 					// ヘッダーをセット
 					if (success_count == 0) // 最初レコードの場合
 						sb.append("■rate alert\r\n");
+
+					if (success_count == 4)
+					{
+						sb.append("...");
+						break;
+					}
 
 					// ディティールをセット
 					sb.append(beans.getSymbol() + " : "
