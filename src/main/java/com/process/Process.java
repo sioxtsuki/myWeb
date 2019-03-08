@@ -137,6 +137,7 @@ public class Process
 
 		try
 		{
+			/*
 			if (IsPrivate == true )
 			{
 				//*********************************
@@ -157,7 +158,8 @@ public class Process
 					conn = Utility.GetConn();
 					res = Utility.GetSymbols(conn);
 				}
-				else if (Utility.CompareString(tmpText, "stop") == true)
+				*/
+				if (Utility.CompareString(tmpText, "stop") == true)
 				{
 					res = Utility.RateCheckProcess(0);
 				}
@@ -170,6 +172,7 @@ public class Process
 					// レートチェック状態確認
 					res = Utility.RateCheckStateProcess();
 				}
+				/*
 				else if (Utility.StartsWithString(tmpText, "symbol=") == true)
 				{
 					//*********************************
@@ -353,7 +356,8 @@ public class Process
 					// 上記以外の場合、オウム返し
 	//				text = event.getMessage().getText();
 				}
-			}
+	//		}
+	 */
 		}
 		catch(Exception e)
 		{
