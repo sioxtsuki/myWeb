@@ -42,6 +42,8 @@ public class Utility
 	{
 		Properties props = new Properties();
 
+		String strProcessText = (value == 0 ? "stop" : "start");
+
 		// 定義情報を取得
 		try
 		{
@@ -58,9 +60,10 @@ public class Utility
 		{
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
+			return e.getMessage().toString();
 		}
 
-		return "rate checker process successfull.";
+		return "rate checker " + strProcessText.toString() + " successful.";
 	}
 
 	/**
@@ -77,7 +80,7 @@ public class Utility
 			props.load(new FileInputStream(Constants.CONF_PROP_PATH));
 
 			if (props.getProperty("ratechk.allow").equals("0") == true)
-				return "stopping.";
+				return "stopped state.";
 
 		} catch (IOException e)
 		{
@@ -86,7 +89,7 @@ public class Utility
 			return e.getCause().getMessage().toString();
 		}
 
-		return "running.";
+		return "in operation.";
 	}
 
 	/**

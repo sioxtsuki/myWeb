@@ -79,8 +79,8 @@ public class ProcessPushMessage
 
 			// MT4からレート情報を取得
 			TcpClient client = new TcpClient();
-			client.setHost(this.props.getProperty("server.ip"));
-			client.setPort(Integer.parseInt(props.getProperty("server.port")));
+			client.setHost(this.props.getProperty("tcp.server.ip"));
+			client.setPort(Integer.parseInt(props.getProperty("tcp.server.port")));
 
 			// コマンド
 			String command = this.props.getProperty("rate.command"); //"RATECHK MASTER=mt4awk113|";
