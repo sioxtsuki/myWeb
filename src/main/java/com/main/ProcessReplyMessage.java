@@ -20,6 +20,8 @@ import com.linecorp.bot.client.LineMessagingServiceBuilder;
 import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.event.Event;
 import com.linecorp.bot.model.event.FollowEvent;
+import com.linecorp.bot.model.event.JoinEvent;
+import com.linecorp.bot.model.event.LeaveEvent;
 import com.linecorp.bot.model.event.MessageEvent;
 import com.linecorp.bot.model.event.UnfollowEvent;
 import com.linecorp.bot.model.event.message.AudioMessageContent;
@@ -433,6 +435,236 @@ public class ProcessReplyMessage
 
 	}
 
+	// グループ退会
+	@EventMapping
+	public void handleLeaveEvent(LeaveEvent event) throws SQLException
+	{
+
+		// ユーザIDを取得
+		String user_id = event.getSource().getSenderId().toString();
+
+    	DBConnection conn = null;
+		PreparedStatement ps = null;
+		Resource resource = null;
+		Properties props = null;
+
+    	try
+    	{
+    		// データベースへ追加
+        	resource = new ClassPathResource(Constants.PROP_PATH);
+			props = PropertiesLoaderUtils.loadProperties(resource);
+			conn = DBFactory.getConnection(props);
+
+			// BOT_IDを取得
+			String bot_id = props.getProperty("id").toString();
+
+			// 削除SQL
+			String tb_user = props.getProperty("tb.user");
+
+	    	StringBuilder sbDelSQL = new StringBuilder();
+	    	sbDelSQL.append("DELETE FROM ");
+	    	sbDelSQL.append(tb_user.toString());
+	    	sbDelSQL.append(" WHERE user_id=? AND bot_id=?");
+	    	//sbDelSQL.append("user_id='" + user_id.toString() + "'");
+	    	//sbDelSQL.append(" AND ");
+	    	//sbDelSQL.append("bot_id='" + bot_id.toString() + "'");
+
+			if (conn != null)
+			{
+				// 削除処理
+				ps = conn.getPreparedStatement(sbDelSQL.toString(), null);
+				if (ps != null)
+				{
+					ps.clearParameters();
+					ps.setString(1, user_id.toString());
+					ps.setString(2, bot_id.toString());
+					int ret = ps.executeUpdate();
+					if (ret == 1)
+					{
+						System.out.println("user delete successful. [" + user_id.toString() + "]");
+					}
+					ps.close();
+				}
+			}
+
+    	} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (InstantiationException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (IllegalAccessException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (SQLException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} finally{
+			if (conn != null)
+			{
+				conn.getConnection().close();
+				conn = null;
+			}
+			if (ps != null)
+			{
+				ps = null;
+			}
+			if (resource != null)
+			{
+				resource = null;
+			}
+			if (props != null)
+			{
+				props = null;
+			}
+		}
+	}
+
+	// グループ追加
+	@EventMapping
+	public void handleJoinEvent(JoinEvent event)
+	{
+		//System.out.println("event: " + event.getSource().getSenderId());
+		// グループIDを取得
+		String user_id = event.getSource().getSenderId().toString();
+
+    	String res = "Signup failed.\nPlease apply again.";
+    	DBConnection conn = null;
+    	Resource resource = null;
+    	Properties props = null;
+		PreparedStatement ps = null;
+
+    	try
+    	{
+        	resource = new ClassPathResource(Constants.PROP_PATH);
+			props = PropertiesLoaderUtils.loadProperties(resource);
+
+    		// データベースへ追加
+			conn = DBFactory.getConnection(props);
+			int ret = 0; // 処理結果
+
+			// BOT_IDを取得
+			String bot_id = props.getProperty("id").toString();
+
+			// 削除SQL
+			String tb_user = props.getProperty("tb.user");
+	    	StringBuilder sbDelSQL = new StringBuilder();
+	    	sbDelSQL.append("DELETE FROM ");
+	    	sbDelSQL.append(tb_user.toString());
+	    	sbDelSQL.append(" WHERE user_id=? AND bot_id=?");
+
+
+			// 追加SQL
+	    	StringBuilder sbAddSQL = new StringBuilder();
+	    	sbAddSQL.append("INSERT INTO ");
+	    	sbAddSQL.append(tb_user.toString());
+	    	sbAddSQL.append(" VALUES (?,?,?,?,?,?,NOW())");
+	    	//sbAddSQL.append("'" + user_id.toString() + "',");
+	    	//sbAddSQL.append("'" + bot_id.toString() + "',");
+	    	//sbAddSQL.append("1,");
+	    	//sbAddSQL.append("'" + sdf.format(new Date()).toString() + "')");
+
+
+			if (conn != null)
+			{
+				// 削除処理
+				ps = conn.getPreparedStatement(sbDelSQL.toString(), null);
+				if (ps != null)
+				{
+					ps.clearParameters();
+					ps.setString(1, user_id.toString());
+					ps.setString(2, bot_id.toString());
+
+					ret = ps.executeUpdate();
+					if (ret == 1)
+						System.out.println("user delete successful. [" + user_id.toString() + "]");
+					ps.close();
+				}
+
+				// 追加処理
+				ps = conn.getPreparedStatement(sbAddSQL.toString(), null);
+				if (ps != null)
+				{
+					// ディスプレイ名を取得
+					String displyName = "group";
+							//GetDisplayName(
+							//props.getProperty("line.bot.channelToken"), user_id.toString());
+
+					// パスワード作成
+					String passwd = PasswordGenerator.GetPassword();
+
+					// パスワード暗号化
+					String crypto_passwd = Crypto.PrintBin(Crypto.Cipher(passwd));
+
+					ps.clearParameters();
+					ps.setString(1, user_id.toString()); // ユーザID
+					ps.setString(2, displyName.toString()); // ディスプレイ名
+					ps.setString(3, bot_id.toString()); // ボットID
+					ps.setInt(4, 1); // 有効フラグ
+					ps.setInt(5, 0); // 権限（初期値 = user）
+					ps.setString(6, crypto_passwd.toString()); // パスワード
+
+					ret = ps.executeUpdate();
+					if (ret != 0) // 処理成功の場合
+					{
+						System.out.println("user add successful. [" + user_id.toString() + "]");
+						res = "Welcome.\nThanking you in advance.";
+						res += "\nyour password: ";
+						res += passwd.toString();
+					}
+					ps.close();
+				}
+			}
+
+			/*
+			// リプライ実行
+			final BotApiResponse apiResponse = lineMessagingService
+			    .replyMessage(new ReplyMessage(event.getReplyToken(),
+			    		Collections.singletonList(new TextMessage(res.toString()))))
+			    			.execute().body();
+*/
+
+    	} catch (IOException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (InstantiationException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (IllegalAccessException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} catch (SQLException e) {
+			// TODO 自動生成された catch ブロック
+			System.out.println(e.getCause());
+		} finally{
+			if (conn != null)
+			{
+				try {
+					conn.getConnection().close();
+				} catch (SQLException e) {
+					// TODO 自動生成された catch ブロック
+					e.printStackTrace();
+				}
+				conn = null;
+			}
+			if (ps != null)
+			{
+				ps = null;
+			}
+			if (resource != null)
+			{
+				resource = null;
+			}
+			if (props != null)
+			{
+				props = null;
+			}
+		}
+
+    	//String replyToken = event.getReplyToken();
+		//BotApiResponse apiResponse = null;
+	}
+
 	/**
 	 * 上記以外のタイプ<br>
 	 * TODO
@@ -440,7 +672,9 @@ public class ProcessReplyMessage
 	 * @param event
 	 */
 	@EventMapping
-	public void defaultMessageEvent(Event event) {
+	public void defaultMessageEvent(Event event)
+	{
+		System.out.println("event: " + event.getSource().getSenderId());
 		System.out.println("event: " + event);
 	}
 }

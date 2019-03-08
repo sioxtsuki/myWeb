@@ -159,15 +159,15 @@ public class Process
 					res = Utility.GetSymbols(conn);
 				}
 				*/
-				if (Utility.CompareString(tmpText, "stop") == true)
+				if (Utility.CompareString(tmpText, "stop") == true) // レートチェック停止
 				{
 					res = Utility.RateCheckProcess(0);
 				}
-				else if (Utility.CompareString(tmpText, "start") == true)
+				else if (Utility.CompareString(tmpText, "start") == true) // レートチェック開始
 				{
 					res = Utility.RateCheckProcess(1);
 				}
-				else if (Utility.CompareString(tmpText, "state") == true)
+				else if (Utility.CompareString(tmpText, "state") == true) // レートチェック稼働状況確認
 				{
 					// レートチェック状態確認
 					res = Utility.RateCheckStateProcess();
