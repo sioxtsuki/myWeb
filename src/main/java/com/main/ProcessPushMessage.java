@@ -129,7 +129,7 @@ public class ProcessPushMessage
 				break;
 
 			case PT_ERROR: // 通常エラー
-				text = "command error.";
+				//text = "sending error.";
 				break;
 
 			default:
