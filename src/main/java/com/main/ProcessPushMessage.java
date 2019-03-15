@@ -97,7 +97,7 @@ public class ProcessPushMessage
 				StringBuilder sb = new StringBuilder();
 
 				int success_count = 0;
-				int beans_count = 0;
+				//int beans_count = 0;
 				for (RateBeans beans : rates)
 				{
 					// 該当レコードが存在する場合
@@ -105,13 +105,17 @@ public class ProcessPushMessage
 					if (success_count == 0) // 最初レコードの場合
 						sb.append("■rate alert\r\n");
 
+					//---------------------------
+					// ディティールをセット
+					//---------------------------
+					// 対象シンボルが5件以上の場合、５件目から『...』 表示
 					if (success_count == 4)
 					{
 						sb.append("...");
 						break;
 					}
 
-					// ディティールをセット
+					// 対象シンボルが4件以内の場合、シンボル名 + 停止秒数を表示
 					sb.append(beans.getSymbol() + " : "
 							+ beans.getInterval() + " 秒\r\n");
 					success_count++;
@@ -121,7 +125,7 @@ public class ProcessPushMessage
 				break;
 
 			case PT_NETWORK_ERROR: // ネットワークエラー
-				text = "network error.";
+				text = "network disconnection.";
 				break;
 
 			case PT_EXCEPTION_ERROR: // 例外エラー
@@ -129,7 +133,7 @@ public class ProcessPushMessage
 				break;
 
 			case PT_ERROR: // 通常エラー
-				//text = "sending error.";
+				text = "connection error.";
 				break;
 
 			default:
