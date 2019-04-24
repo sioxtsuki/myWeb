@@ -156,7 +156,7 @@ public class ProcessPushMessage
 				String tb_user = conn.GetProps().getProperty("tb.user");
 		    	sbFindSQL = new StringBuilder();
 				sbFindSQL.delete(0, sbFindSQL.length());
-				sbFindSQL.append("SELECT user_id FROM ");
+				sbFindSQL.append("SELECT user_id, authority FROM ");
 				sbFindSQL.append(tb_user.toString());
 				sbFindSQL.append(" WHERE permissions =? AND bot_id=?");
 
