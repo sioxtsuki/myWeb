@@ -173,6 +173,11 @@ public class Process
 					res = Utility.RateCheckStateProcess();
 				}
 				/*
+				else if (Utility.CompareString(tmpText, "check") == true) // レート配信確認
+				{
+					// レートチェック状態確認
+					res = Utility.RateCheckStateProcess();
+				}
 				else if (Utility.StartsWithString(tmpText, "symbol=") == true)
 				{
 					//*********************************

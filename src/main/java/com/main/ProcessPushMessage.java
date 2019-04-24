@@ -90,7 +90,9 @@ public class ProcessPushMessage
 			//-------------------------
 			// 返却文字列作成
 			//-------------------------
-			switch (client.run(command, rates))
+			Constants.PROCESS_TYPE process_type = client.run(command, rates); // TCPを実行
+
+			switch (process_type) // 処理タイプを判定
 			{
 			case PT_SUCCESS: // 処理成功
 
@@ -171,6 +173,19 @@ public class ProcessPushMessage
 						while (rs.next())
 						{
 							String user_id = rs.getString("user_id").toString();
+
+							//------------------------------------------------------------
+							// Add By 2019.04.24
+							// アドミン権限以外の場合、通常エラーの場合、処理中断
+							int authority = rs.getInt("authority");
+							if (authority != 1) // アドミン権限以外の場合
+							{
+								if (process_type == Constants.PROCESS_TYPE.PT_ERROR)
+								{
+									continue;
+								}
+							}
+							//------------------------------------------------------------
 
 							//System.out.println(user_id.trim().toString());
 				        	@SuppressWarnings("unused")
