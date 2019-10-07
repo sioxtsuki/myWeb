@@ -121,14 +121,13 @@ public class ProcessReplyMessage
 			    .replyMessage(new ReplyMessage(event.getReplyToken(),
 			    		Collections.singletonList(new TextMessage(text.toString()))))
 			    			.execute().body();
+			System.out.println("Sent messages: " + apiResponse);
 		}
 		catch (IOException | SQLException e)
 		{
 			// TODO 自動生成された catch ブロック
 			System.out.println(e.getCause());
 		}
-
-		System.out.println("Sent messages: " + apiResponse);
 	}
 
 	/**

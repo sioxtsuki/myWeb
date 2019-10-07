@@ -188,7 +188,7 @@ public class ProcessPushMessage
 							//------------------------------------------------------------
 
 							//System.out.println(user_id.trim().toString());
-				        	@SuppressWarnings("unused")
+				        	//@SuppressWarnings("unused")
 							final BotApiResponse response = this.lineMessagingClient
 				                                            .pushMessage(new PushMessage(user_id.toString(),
 				                                                         new TextMessage(text.toString()
@@ -196,6 +196,7 @@ public class ProcessPushMessage
 				 //                                                        new MessageAction("はい", "はい"),
 				 //                                                        new MessageAction("いいえ", "いいえ")
 				                                                          ))).get();
+				        	System.out.println(response.toString());
 						}
 
 						rs.close();
@@ -273,7 +274,7 @@ public class ProcessPushMessage
 							String user_id = rs.getString("user_id").toString();
 
 							//System.out.println(user_id.trim().toString());
-				        	@SuppressWarnings("unused")
+				        	//@SuppressWarnings("unused")
 							final BotApiResponse response = this.lineMessagingClient
 				                                            .pushMessage(new PushMessage(user_id.toString(),
 				                                                         new TextMessage(text.toString()
@@ -281,6 +282,7 @@ public class ProcessPushMessage
 				 //                                                        new MessageAction("はい", "はい"),
 				 //                                                        new MessageAction("いいえ", "いいえ")
 				                                                          ))).get();
+				        	System.out.println(response.toString());
 						}
 
 						rs.close();
