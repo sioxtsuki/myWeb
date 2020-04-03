@@ -31,7 +31,7 @@ public class TcpClient// implements Runnable
     //+------------------------------------------
 	//| Runメソッドの実装
     //+------------------------------------------
-    public Constants.PROCESS_TYPE run(String command, ArrayList<RateBeans> rates)
+    public Constants.PROCESS_TYPE run(String command, ArrayList<String> info, ArrayList<RateBeans> rates)
     {
     	//ArrayList<RateBeans> rates = new ArrayList<RateBeans>();
 		Socket socket = null;//ソケット
@@ -69,8 +69,23 @@ public class TcpClient// implements Runnable
 					count++;
 					continue;
 				}
+				/*
+				 * 削除
+				if (count == 1) // ２件目のデータの場合（サーバー名）
+				{
+					info.add(recive);
+					count++;
+					continue;
+				}
+				*/
+				if (count == 1) // ３件目のデータの場合（種別）0: 個別、1：全体
+				{
+					info.add(recive);
+					count++;
+					continue;
+				}
 
-				// ２件目以降のデータの場合
+				// ４件目以降のデータの場合（シンボル）
 				String values[] = recive.split("\\|");
 
 				if (values.length >= 4)

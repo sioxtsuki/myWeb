@@ -1,6 +1,7 @@
 package com.main;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.PreparedStatement;
@@ -46,7 +47,9 @@ public class ProcessPushMessage
 	}
 
 	/**
-	 * レートチェック処理
+	 * 処理実行
+	 *
+	 * @param port
 	 * @throws URISyntaxException
 	 * @throws IOException
 	 * @throws SQLException
@@ -55,23 +58,14 @@ public class ProcessPushMessage
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 */
-	public void pushMT4RateCheckProcessAlarm() throws URISyntaxException, IOException, SQLException, InterruptedException, ExecutionException, InstantiationException, IllegalAccessException
+	@SuppressWarnings("unused")
+	private void Process(String port, String name)throws URISyntaxException, SQLException, InterruptedException, ExecutionException, InstantiationException, IllegalAccessException
 	{
     	DBConnection conn = null;
     	PreparedStatement ps = null;
     	ResultSet rs = null;
     	String text = "";
     	StringBuilder sbFindSQL = null;
-
-    	//-------------------------------
-    	// 配信を許可しない場合は処理中断
-    	//-------------------------------
-    	Properties conf_props = new Properties();
-    	conf_props.load(new FileInputStream(Constants.CONF_PROP_PATH));
-    	if (conf_props.getProperty("ratechk.allow").toString().equals("0") == true)
-    	{
-    		return;
-    	}
 
 		try
 		{
@@ -80,32 +74,43 @@ public class ProcessPushMessage
 			// MT4からレート情報を取得
 			TcpClient client = new TcpClient();
 			client.setHost(this.props.getProperty("tcp.server.ip"));
-			client.setPort(Integer.parseInt(props.getProperty("tcp.server.port")));
+			client.setPort(Integer.parseInt(port)); // props.getProperty("tcp.server.port")));
 
 			// コマンド
 			String command = this.props.getProperty("rate.command"); //"RATECHK MASTER=mt4awk113|";
 
 			ArrayList<RateBeans> rates = new ArrayList<RateBeans>();
 
+			ArrayList<String> alInfo = new ArrayList<String>();
+
+			StringBuilder sb = new StringBuilder();
+
 			//-------------------------
 			// 返却文字列作成
 			//-------------------------
-			Constants.PROCESS_TYPE process_type = client.run(command, rates); // TCPを実行
+			Constants.PROCESS_TYPE process_type = client.run(command, alInfo, rates); // TCPを実行
 
 			switch (process_type) // 処理タイプを判定
 			{
 			case PT_SUCCESS: // 処理成功
-
-				StringBuilder sb = new StringBuilder();
 
 				int success_count = 0;
 				//int beans_count = 0;
 				for (RateBeans beans : rates)
 				{
 					// 該当レコードが存在する場合
-					// ヘッダーをセット
 					if (success_count == 0) // 最初レコードの場合
+					{
+						// ヘッダーをセット
 						sb.append("■rate alert\r\n");
+						// サーバー名をセット
+						sb.append("server: " + name.toString() + "\r\n");
+						if (alInfo.get(0).equals("1"))
+						{
+							sb.append("Stop all symbol rates.");
+							break;
+						}
+					}
 
 					//---------------------------
 					// ディティールをセット
@@ -127,15 +132,21 @@ public class ProcessPushMessage
 				break;
 
 			case PT_NETWORK_ERROR: // ネットワークエラー
-				text = "network disconnection.";
+				sb.append("■network disconnection\r\n");
+				sb.append("server: " + name.toString());
+				text = sb.toString();
 				break;
 
 			case PT_EXCEPTION_ERROR: // 例外エラー
-				text = "exception error.";
+				sb.append("■exception error\r\n");
+				sb.append("server: " + name.toString());
+				text = sb.toString();
 				break;
 
 			case PT_ERROR: // 通常エラー
-				text = "connection error.";
+				sb.append("■connection error\r\n");
+				sb.append("server: " + name.toString());
+				text = sb.toString();
 				break;
 
 			default:
@@ -222,6 +233,43 @@ public class ProcessPushMessage
     			sbFindSQL= null;
         	}
         }
+	}
+
+	/**
+	 * レートチェック処理
+	 *
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws URISyntaxException
+	 * @throws SQLException
+	 * @throws InterruptedException
+	 * @throws ExecutionException
+	 */
+	public void pushMT4RateCheckProcessAlarm() throws FileNotFoundException, IOException, InstantiationException, IllegalAccessException, URISyntaxException, SQLException, InterruptedException, ExecutionException
+	{
+
+		// プロパティ情報を取得
+    	Properties conf_props = new Properties();
+    	conf_props.load(new FileInputStream(Constants.CONF_PROP_PATH));
+    	if (conf_props.getProperty("ratechk.allow").toString().equals("0") == true) // 配信を許可しない場合は処理中断
+    	{
+    		return;
+    	}
+
+    	int count = 0;
+    	// ポート情報を取得
+    	String ports[] = props.getProperty("tcp.server.port").split(",");
+    	String names[] = props.getProperty("tcp.server.name").split(",");
+    	for (String port : ports) // ポート数分処理実行
+    	{
+    		if (port.trim().isEmpty()) continue; // 空の場合スルー
+    		String name = names[count];
+        	this.Process(port, name); // 処理実行
+        	count++;
+    	}
+
 	}
 
     /**
